@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Figma UI Kit - Hệ Thống IoT PTIT 2026</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #FA541C;
+      --primary-light: #FFF7E6;
+      --primary-border: #FFD591;
+      --bg: #F8F9FA;
+      --card-bg: #FFFFFF;
+      --text: #262626;
+      --text-muted: #8C8C8C;
+      --success: #52C41A;
+      --warning: #FAAD14;
+      --error: #FF4D4F;
+      --blue: #1890FF;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 40px; }
+    .title { font-size: 24px; font-weight: 700; color: #D4380D; margin-bottom: 8px; }
+    .subtitle { color: var(--text-muted); font-size: 14px; margin-bottom: 30px; }
+    .frame-container { display: flex; flex-direction: column; gap: 40px; }
+    .frame { background: #fff; border-radius: 16px; border: 1px solid #FFE7BA; box-shadow: 0 4px 20px rgba(0,0,0,0.06); padding: 24px; }
+    .frame-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #F0F0F0; padding-bottom: 12px; margin-bottom: 20px; }
+    .tag { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+    .tag-orange { background: #FFF7E6; color: #FA541C; border: 1px solid #FFD591; }
+    .tag-green { background: #F6FFED; color: #52C41A; border: 1px solid #B7EB8F; }
+    .tag-gray { background: #FAFAFA; color: #8C8C8C; border: 1px solid #D9D9D9; }
+    .sensor-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+    .sensor-card { padding: 18px; border-radius: 12px; border: 1px solid #FFE7BA; }
+    .sensor-val { font-size: 28px; font-weight: 700; margin: 8px 0; }
+    .main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+    .chart-box { background: #fff; border: 1px solid #FFE7BA; border-radius: 12px; padding: 20px; height: 300px; display: flex; flex-direction: column; justify-content: space-between; }
+    .device-box { background: #fff; border: 1px solid #FFE7BA; border-radius: 12px; padding: 20px; }
+    .device-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-radius: 8px; border: 1px solid #F0F0F0; margin-bottom: 12px; }
+    .btn { background: var(--primary); color: #fff; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="title">🎨 Figma UI Kit & Wireframe Mockup - IoT PTIT 2026</div>
+  <div class="subtitle">Bản thiết kế giao diện chuẩn 5 Use Cases, tone màu Cam - Trắng</div>
+
+  <div class="frame-container">
+    <!-- Frame Dashboard UC02/04 -->
+    <div class="frame">
+      <div class="frame-header">
+        <div><strong>Frame 1: Dashboard (UC02 & UC04)</strong></div>
+        <span class="tag tag-orange">Desktop 1440x900px</span>
+      </div>
+
+      <div class="sensor-grid">
+        <div class="sensor-card" style="background: #FFF7E6;">
+          <div style="font-size: 13px; color: #595959;">🔥 Nhiệt Độ (DHT22)</div>
+          <div class="sensor-val" style="color: #FA541C;">28.5 <span style="font-size: 16px;">°C</span></div>
+          <span class="tag tag-green">Bình thường</span>
+        </div>
+        <div class="sensor-card" style="background: #E6F7FF; border-color: #91D5FF;">
+          <div style="font-size: 13px; color: #595959;">💧 Độ Ẩm (DHT22)</div>
+          <div class="sensor-val" style="color: #1890FF;">68.2 <span style="font-size: 16px;">%</span></div>
+          <span class="tag tag-green">Ổn định</span>
+        </div>
+        <div class="sensor-card" style="background: #FFFBE6; border-color: #FFE58F;">
+          <div style="font-size: 13px; color: #595959;">☀️ Ánh Sáng (LDR)</div>
+          <div class="sensor-val" style="color: #FAAD14;">520 <span style="font-size: 16px;">Lux</span></div>
+          <span class="tag tag-green">Ánh sáng tốt</span>
+        </div>
+      </div>
+
+      <div class="main-grid">
+        <div class="chart-box">
+          <strong>📈 Biểu Đồ Giám Sát Cảm Biến (5s Reload)</strong>
+          <div style="color: #8C8C8C; text-align: center; margin: auto;">[ AreaChart Gradient Wave Preview ]</div>
+          <div style="display: flex; gap: 10px; font-size: 12px;">
+            <span style="color: #FA541C;">● Nhiệt độ</span>
+            <span style="color: #1890FF;">● Độ ẩm</span>
+            <span style="color: #FAAD14;">● Ánh sáng</span>
+          </div>
+        </div>
+
+        <div class="device-box">
+          <strong style="display: block; margin-bottom: 14px;">🎛️ Bảng Điều Khiển Thiết Bị</strong>
+          <!-- Đèn -->
+          <div class="device-item" style="background: #FFF7E6; border-color: #FA8C16;">
+            <div>
+              <div style="font-weight: 600;">💡 Đèn Chiếu Sáng (LAMP_01)</div>
+              <span class="tag tag-green" style="margin-top: 4px;">Đã kết nối (GPIO 26)</span>
+            </div>
+            <button class="btn" style="background: #FA541C;">BẬT</button>
+          </div>
+          <!-- Quạt -->
+          <div class="device-item" style="background: #FAFAFA; border-style: dashed;">
+            <div>
+              <div style="font-weight: 600; color: #8C8C8C;">🌀 Quạt Làm Mát (FAN_01)</div>
+              <span class="tag tag-gray" style="margin-top: 4px;">Chưa kết nối (Module mở rộng)</span>
+            </div>
+            <button class="btn" style="background: #D9D9D9; color: #8C8C8C; cursor: not-allowed;" disabled>VÔ HIỆU HÓA</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

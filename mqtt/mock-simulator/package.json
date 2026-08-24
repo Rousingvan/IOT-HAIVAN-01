@@ -1,0 +1,14 @@
+{
+  "name": "iot-ptit-mock-simulator",
+  "version": "1.0.0",
+  "description": "Mock ESP32 Telemetry & ACK Responder for IoT PTIT",
+  "type": "module",
+  "scripts": {
+    "telemetry": "node mock-telemetry.js",
+    "ack": "node mock-ack-responder.js",
+    "all": "node mock-telemetry.js & node mock-ack-responder.js"
+  },
+  "dependencies": {
+    "mqtt": "^5.7.0"
+  }
+}

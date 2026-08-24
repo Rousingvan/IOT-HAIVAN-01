@@ -1,0 +1,14 @@
+{
+  "name": "iot-ptit-database",
+  "version": "1.0.0",
+  "description": "MongoDB Mongoose Schemas & Seeders for IoT PTIT",
+  "type": "module",
+  "scripts": {
+    "seed": "node seeders/run-all-seeds.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.5",
+    "mongoose": "^8.4.1"
+  }
+}

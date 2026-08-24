@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+*/node_modules/
+*/*/node_modules/
+package-lock.json
+
+# Build outputs & Distribution
+dist/
+build/
+*.local
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Hardware & Embedded Build Artifacts
+.pio/
+.pioenvs/
+.piolibdeps/
+*.hex
+*.bin
+*.elf
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor & OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Agent scratch / cache (if any)
+.gemini/
+scratch/

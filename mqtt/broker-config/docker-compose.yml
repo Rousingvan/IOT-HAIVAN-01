@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    container_name: iot_ptit_mosquitto
+    restart: always
+    ports:
+      - "1883:1883"      # MQTT Port tiêu chuẩn
+      - "9001:9001"      # WebSocket Port cho MQTT over WebSockets
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
