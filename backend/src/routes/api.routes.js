@@ -4,7 +4,12 @@ import { getProfile } from '../controllers/profile.controller.js';
 import { getLatestSensorData, getSensorHistory } from '../controllers/sensor.controller.js';
 import { querySensorData } from '../controllers/sensorData.controller.js';
 import { getDevices, toggleDevice } from '../controllers/device.controller.js';
-import { queryActionHistory } from '../controllers/actionHistory.controller.js';
+import {
+  queryActionHistory,
+  getAlertStats,
+  getAlertThreshold,
+  updateAlertThreshold,
+} from '../controllers/actionHistory.controller.js';
 
 const router = Router();
 
@@ -24,7 +29,12 @@ router.get('/sensor-data', querySensorData);
 router.get('/devices', getDevices);
 router.post('/devices/:deviceCode/toggle', toggleDevice);
 
-// UC05: Search Action History with Time Range Filter (timestamp.md)
+// UC05: Search Action History with Time Range Filter (timestamp.md) & Alert Stats (Đề 1)
+router.get('/action-history/alert-stats', getAlertStats);
 router.get('/action-history', queryActionHistory);
+
+// Đề 1: Cấu hình ngưỡng cảnh báo ánh sáng X
+router.get('/alerts/threshold', getAlertThreshold);
+router.post('/alerts/threshold', updateAlertThreshold);
 
 export default router;

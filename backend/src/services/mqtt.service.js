@@ -1,9 +1,28 @@
 import { TOPICS, initMQTT } from '../config/mqtt.js';
 import { SensorData } from '../models/SensorData.model.js';
+import { ActionHistory } from '../models/ActionHistory.model.js';
 import { ackService } from './ack.service.js';
 
 let mqttClient = null;
 let socketIo = null;
+
+// Cấu hình ngưỡng cảnh báo ánh sáng X (Đề 1)
+let currentLightThreshold = 600;
+let lastAlertTime = 0;
+
+export const getLightThreshold = () => currentLightThreshold;
+
+export const setLightThreshold = (val) => {
+  const num = Number(val);
+  if (!isNaN(num) && num >= 0) {
+    currentLightThreshold = num;
+    console.log(`💡 [Alert Config] Đã cập nhật ngưỡng ánh sáng X = ${currentLightThreshold} Lux`);
+    if (socketIo) {
+      socketIo.emit('threshold_changed', { threshold: currentLightThreshold });
+    }
+  }
+  return currentLightThreshold;
+};
 
 export const startMQTTService = (io) => {
   socketIo = io;
@@ -33,6 +52,39 @@ export const startMQTTService = (io) => {
       // Phát realtime qua Socket.io
       if (socketIo) {
         socketIo.emit('telemetry', point);
+      }
+
+      // ĐỀ 1: Kiểm tra ngưỡng ánh sáng > X
+      if (point.light > currentLightThreshold) {
+        const nowMs = Date.now();
+        // Cooldown 5s giữa các lần ghi log ActionHistory để tránh spam DB
+        if (nowMs - lastAlertTime >= 5000) {
+          lastAlertTime = nowMs;
+          try {
+            await ActionHistory.create({
+              device_code: 'ALERT_LED',
+              device_name: 'Đèn Cảnh Báo Ánh Sáng',
+              action: 'ALERT',
+              command_time: measuredAt,
+              response_time: measuredAt,
+              latency_ms: 10,
+              status: 'SUCCESS',
+              user_id: 'SYSTEM_ALERT',
+            });
+            console.log(`🚨 [CẢNH BÁO] Ánh sáng ${point.light} Lux > Ngưỡng ${currentLightThreshold} Lux -> Đã lưu ActionHistory ALERT_LED`);
+          } catch (e) {
+            console.warn('Lỗi ghi ActionHistory cho ALERT_LED:', e.message);
+          }
+        }
+
+        // Bắn Socket cảnh báo tức thì về client
+        if (socketIo) {
+          socketIo.emit('light_alert', {
+            light: point.light,
+            threshold: currentLightThreshold,
+            time: measuredAt,
+          });
+        }
       }
     }
 
