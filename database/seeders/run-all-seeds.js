@@ -130,22 +130,6 @@ async function seedDatabase() {
         is_connected: true,    // Đã đấu nối phần cứng thực tế
         current_state: 'OFF',  // Trạng thái ban đầu: Đang TẮT
       },
-      {
-        device_code: 'P201_LAMP_04',
-        device_name: 'Đèn Chiếu Sáng 04',
-        device_type: 'LAMP',
-        pin_relay: 22,         // Nối vào Relay kích hoạt chân GPIO 22 (Đề 1)
-        is_connected: true,    // Đã đấu nối phần cứng thực tế
-        current_state: 'OFF',  // Trạng thái ban đầu: Đang TẮT
-      },
-      {
-        device_code: 'ALERT_LED',
-        device_name: 'Đèn Cảnh Báo Ánh Sáng',
-        device_type: 'ALERT',
-        pin_relay: 2,
-        is_connected: true,
-        current_state: 'OFF',
-      },
       /*
       // Tạm thời comment thiết bị quạt theo yêu cầu thực hành/demo
       {
@@ -166,7 +150,7 @@ async function seedDatabase() {
       },
       */
     ]);
-    console.log('Đã tạo Thiết bị: 4 Đèn Chiếu Sáng (Đã kết nối).');
+    console.log('Đã tạo Thiết bị: 3 Đèn Chiếu Sáng (Đã kết nối).');
 
     // ============================================================================
     // BƯỚC 5: TẠO 100 BẢN GHI DỮ LIỆU ĐO ĐẠC CỦA CẢM BIẾN (SENSORDATA)

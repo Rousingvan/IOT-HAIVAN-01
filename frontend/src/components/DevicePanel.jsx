@@ -43,7 +43,10 @@ export default function DevicePanel({ devices = [], onToggleDevice, loadingMap =
 
   // 4. Danh sách hiển thị: Tất cả các thiết bị trong hệ thống
   const allDevices = useMemo(() => {
-    return devices;
+    // Chỉ hiển thị 3 đèn điều khiển thực tế, loại bỏ đèn cảnh báo khỏi bảng công tắc thủ công
+    return devices.filter(
+      (d) => d.device_code !== 'ALERT_LED' && d.device_code !== 'P201_LAMP_04'
+    );
   }, [devices]);
 
   // 5. Hàm render Icon tương ứng cho từng loại thiết bị và trạng thái hoạt động

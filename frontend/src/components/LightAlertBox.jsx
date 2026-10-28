@@ -6,7 +6,6 @@ import {
   AlertFilled,
   SettingOutlined,
   HistoryOutlined,
-  CheckCircleFilled,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api';
@@ -15,26 +14,25 @@ const { Title, Text } = Typography;
 
 /**
  * ==============================================================================
- * COMPONENT: LightAlertBox (Box Đèn Cảnh Báo Ánh Sáng & Setting Ngưỡng X - ĐỀ 1)
+ * COMPONENT: LightAlertBox (Cảnh Báo Ánh Sáng Vượt Ngưỡng - Nhấp Nháy 2s)
  * ==============================================================================
- * YÊU CẦU ĐỀ 1:
- * 1. Thêm 1 box led cảnh báo trên giao diện.
- * 2. Có chỗ setting ngưỡng X (Lux).
- * 3. Khi ánh sáng > X thì cảnh báo: nháy box LED (CSS Animation) / nháy LED hardware.
- * 4. Nút bấm xem sự kiện lịch sử cảnh báo trên màn History.
+ * CƠ CHẾ:
+ * 1. Khi ánh sáng đo được <= ngưỡng X: Đèn cảnh báo TẮT (An toàn), không nháy.
+ * 2. Khi ánh sáng đo được > ngưỡng X: Đèn cảnh báo NHẤP NHÁY LIÊN TỤC CHU KỲ 2 GIÂY.
+ * 3. Hỗ trợ thay đổi ngưỡng X linh hoạt ngay trên giao diện.
  * ==============================================================================
  */
 export default function LightAlertBox({ currentLight = 0 }) {
   const navigate = useNavigate();
 
-  // 1. State lưu trữ ngưỡng ánh sáng X (mặc định lấy từ localStorage hoặc 600)
+  // 1. Ngưỡng ánh sáng X (Lux)
   const [threshold, setThreshold] = useState(() => {
     return Number(localStorage.getItem('iot_light_threshold_x') || 600);
   });
 
   const [saving, setSaving] = useState(false);
 
-  // 2. Tải cấu hình ngưỡng từ Backend khi khởi tạo (nếu có)
+  // 2. Tải cấu hình ngưỡng từ Backend
   useEffect(() => {
     const fetchThreshold = async () => {
       try {
@@ -44,13 +42,13 @@ export default function LightAlertBox({ currentLight = 0 }) {
           localStorage.setItem('iot_light_threshold_x', String(val));
         }
       } catch (e) {
-        // Fallback giữ nguyên state từ localStorage
+        // Fallback giữ nguyên từ localStorage
       }
     };
     fetchThreshold();
   }, []);
 
-  // 3. Hàm lưu cấu hình ngưỡng X mới
+  // 3. Cập nhật ngưỡng X
   const handleSaveThreshold = async (value) => {
     const num = Number(value);
     if (isNaN(num) || num < 0) {
@@ -70,30 +68,28 @@ export default function LightAlertBox({ currentLight = 0 }) {
     }
   };
 
-  // 4. Kiểm tra điều kiện cảnh báo: ánh sáng đo được > ngưỡng X
+  // 4. Kiểm tra điều kiện vượt ngưỡng
   const isAlerting = Number(currentLight) > Number(threshold);
 
   return (
     <>
-      {/* Khai báo CSS Animation nhấp nháy cho Box LED khi vượt ngưỡng */}
+      {/* Khai báo CSS Animation: Nhấp nháy đúng chu kỳ 2 giây (1s Sáng / 1s Mờ) */}
       <style>
         {`
-          @keyframes alertPulseGlow {
-            0% {
+          @keyframes alertBlinkCycle2s {
+            0%, 100% {
+              opacity: 1;
               transform: scale(1);
-              box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+              box-shadow: 0 0 16px 4px rgba(239, 68, 68, 0.75);
             }
             50% {
-              transform: scale(1.03);
-              box-shadow: 0 0 20px 8px rgba(239, 68, 68, 0.55);
-            }
-            100% {
-              transform: scale(1);
-              box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+              opacity: 0.25;
+              transform: scale(0.96);
+              box-shadow: 0 0 2px 0 rgba(239, 68, 68, 0.1);
             }
           }
-          .alert-blinking-box {
-            animation: alertPulseGlow 0.9s infinite ease-in-out;
+          .alert-blinking-2s {
+            animation: alertBlinkCycle2s 2s infinite ease-in-out;
           }
         `}
       </style>
@@ -104,7 +100,7 @@ export default function LightAlertBox({ currentLight = 0 }) {
           background: '#FFFFFF',
           border: isAlerting ? '1.5px solid #EF4444' : '1px solid #EAECF0',
           boxShadow: isAlerting
-            ? '0 4px 12px rgba(239, 68, 68, 0.15)'
+            ? '0 4px 14px rgba(239, 68, 68, 0.18)'
             : '0 1px 3px rgba(0, 0, 0, 0.04)',
           transition: 'all 0.3s ease',
         }}
@@ -136,11 +132,11 @@ export default function LightAlertBox({ currentLight = 0 }) {
             color={isAlerting ? 'error' : 'success'}
             style={{ fontWeight: 600, fontSize: 12, padding: '2px 8px', borderRadius: 6 }}
           >
-            {isAlerting ? '🚨 CẢNH BÁO!' : 'ỔN ĐỊNH'}
+            {isAlerting ? '🚨 NHÁY CẢNH BÁO (2s)' : 'ỔN ĐỊNH'}
           </Tag>
         </div>
 
-        {/* Khu vực ô Setting ngưỡng X */}
+        {/* Ô Setting ngưỡng X */}
         <div
           style={{
             background: '#F9FAFB',
@@ -175,14 +171,13 @@ export default function LightAlertBox({ currentLight = 0 }) {
           </Space>
         </div>
 
-        {/* BOX LED CẢNH BÁO VẬT LÝ / TRỰC QUAN (NHẤP NHÁY KHI VƯỢT NGƯỠNG) */}
+        {/* BOX ĐÈN CẢNH BÁO: KHI ÁNH SÁNG > X THÌ NHẤP NHÁY 2S LIÊN TỤC */}
         <div
-          className={isAlerting ? 'alert-blinking-box' : ''}
           style={{
             borderRadius: 10,
             padding: '12px 14px',
-            background: isAlerting ? '#FEE2E2' : '#F0FDF4',
-            border: isAlerting ? '2px solid #DC2626' : '1px solid #86EFAC',
+            background: isAlerting ? '#FEF2F2' : '#F0FDF4',
+            border: isAlerting ? '1.5px solid #FCA5A5' : '1px solid #86EFAC',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -190,9 +185,10 @@ export default function LightAlertBox({ currentLight = 0 }) {
             transition: 'all 0.3s ease',
           }}
         >
-          {/* Cụm Icon LED tròn + 2 trường thông tin */}
+          {/* Cụm Icon LED (Nhấp nháy chu kỳ 2s khi vượt ngưỡng) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
             <div
+              className={isAlerting ? 'alert-blinking-2s' : ''}
               style={{
                 width: 44,
                 height: 44,
@@ -203,7 +199,7 @@ export default function LightAlertBox({ currentLight = 0 }) {
                 alignItems: 'center',
                 justifyContent: 'center',
                 boxShadow: isAlerting
-                  ? '0 0 14px rgba(239, 68, 68, 0.8)'
+                  ? '0 0 16px rgba(239, 68, 68, 0.8)'
                   : '0 0 8px rgba(34, 197, 94, 0.4)',
                 transition: 'all 0.3s ease',
               }}
@@ -225,7 +221,7 @@ export default function LightAlertBox({ currentLight = 0 }) {
               >
                 <span style={{ fontWeight: 500 }}>Trạng thái đèn:</span>
                 <strong style={{ fontWeight: 700 }}>
-                  {isAlerting ? 'BẬT (NHÁY)' : 'TẮT'}
+                  {isAlerting ? 'NHẤP NHÁY (Chu kỳ 2s)' : 'TẮT (AN TOÀN)'}
                 </strong>
               </div>
 
@@ -245,14 +241,14 @@ export default function LightAlertBox({ currentLight = 0 }) {
                   {currentLight} Lux
                 </strong>
                 <span style={{ fontSize: 11, color: isAlerting ? '#DC2626' : '#6B7280' }}>
-                  (Ngưỡng: {threshold} Lux)
+                  {isAlerting ? `(> Ngưỡng ${threshold} Lux)` : `(≤ Ngưỡng ${threshold} Lux)`}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Nút Xem Lịch Sử Cảnh Báo chuyển hướng nhanh */}
-          <Tooltip title="Xem toàn bộ nhật ký các lần đèn cảnh báo kích hoạt">
+          {/* Nút Xem Lịch Sử */}
+          <Tooltip title="Xem toàn bộ nhật ký các lần ánh sáng vượt ngưỡng cảnh báo">
             <Button
               size="small"
               type={isAlerting ? 'primary' : 'default'}

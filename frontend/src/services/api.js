@@ -85,28 +85,6 @@ let mockDevices = [
     current_state: 'OFF',    // Mặc định đang tắt
     updated_at: new Date().toISOString(),
   },
-  {
-    device_code: 'P201_LAMP_04',
-    device_name: 'Đèn Chiếu Sáng 04',
-    device_type: 'LAMP',
-    room: 'Phòng Thực Hành IoT 201 - Nhà A2',
-    location: 'Đèn hành lang lối vào (Đề 1)',
-    pin_relay: 22,           // Nối với chân GPIO 22 trên ESP32
-    is_connected: true,      // Đã lắp phần cứng thực tế
-    current_state: 'OFF',    // Mặc định đang tắt
-    updated_at: new Date().toISOString(),
-  },
-  {
-    device_code: 'ALERT_LED',
-    device_name: 'Đèn Cảnh Báo Ánh Sáng',
-    device_type: 'ALERT',
-    room: 'Phòng Thực Hành IoT 201 - Nhà A2',
-    location: 'LED Onboard ESP32 (GPIO 2)',
-    pin_relay: 2,
-    is_connected: true,
-    current_state: 'OFF',
-    updated_at: new Date().toISOString(),
-  },
   /*
   // Tạm thời comment thiết bị quạt phục vụ bài demo tập trung vào hệ thống đèn chiếu sáng
   {

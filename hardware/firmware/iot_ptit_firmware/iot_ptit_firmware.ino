@@ -24,6 +24,12 @@ PubSubClient mqttClient(espClient);
 unsigned long lastTelemetryTime = 0;
 const unsigned long TELEMETRY_INTERVAL = 2000; // Chu kỳ gửi dữ liệu cảm biến: 2 giây
 
+// Cấu hình cảnh báo nhấp nháy chu kỳ 2s (Đề 1)
+int lightAlertThreshold = 600;        // Ngưỡng ánh sáng X (mặc định 600 Lux)
+bool isLightAlerting = false;         // Cờ báo vượt ngưỡng
+unsigned long lastBlinkTime = 0;      // Mốc thời gian chớp tắt LED
+bool alertLedState = false;           // Trạng thái chân LED nháy
+
 // =========================================================================
 // HÀM KẾT NỐI WIFI
 // =========================================================================
@@ -186,8 +192,23 @@ void loop() {
   }
   mqttClient.loop();
 
-  // Đọc và gửi dữ liệu cảm biến định kỳ mỗi 3 giây
   unsigned long now = millis();
+
+  // ĐỀ 1: Khi ánh sáng vượt ngưỡng X -> Nhấp nháy LED cảnh báo liên tục chu kỳ 2s (1s BẬT / 1s TẮT)
+  if (isLightAlerting) {
+    if (now - lastBlinkTime >= 1000) { // 1000ms đổi trạng thái một lần = chu kỳ 2000ms (2s)
+      lastBlinkTime = now;
+      alertLedState = !alertLedState;
+      digitalWrite(PIN_LED_STATUS, alertLedState ? HIGH : LOW);
+    }
+  } else {
+    // Khi an toàn, giữ sáng báo kết nối ổn định
+    if (WiFi.status() == WL_CONNECTED && mqttClient.connected()) {
+      digitalWrite(PIN_LED_STATUS, HIGH);
+    }
+  }
+
+  // Đọc và gửi dữ liệu cảm biến định kỳ
   if (now - lastTelemetryTime >= TELEMETRY_INTERVAL) {
     lastTelemetryTime = now;
 
@@ -199,6 +220,8 @@ void loop() {
     int rawLdr = analogRead(PIN_LDR);
     // Chuyển đổi sang đơn vị Lux tương đối (0 - 1000 Lux)
     int lightLux = map(rawLdr, 0, 4095, 1000, 0);
+    // Kiểm tra vượt ngưỡng để kích hoạt nháy LED 2s
+    isLightAlerting = (lightLux > lightAlertThreshold);
 
     // Kiểm tra tính hợp lệ của số liệu
     if (isnan(temp) || isnan(humid)) {
