@@ -11,6 +11,7 @@ import SensorCard from '../components/SensorCard';
 import SensorAreaChart from '../components/SensorAreaChart';
 import DevicePanel from '../components/DevicePanel';
 import AlertBanner from '../components/AlertBanner';
+import LightAlertBox from '../components/LightAlertBox';
 import { apiService } from '../services/api';
 import { getSocket } from '../services/socket';
 
@@ -194,13 +195,16 @@ export default function DashboardPage() {
           <SensorAreaChart data={history} loading={loadingChart} />
         </Col>
 
-        {/* Cột phải: Bảng điều khiển thiết bị chiếm 8/24 phần (~33.3%) */}
+        {/* Cột phải: Box Đèn Cảnh Báo Ánh Sáng (Đề 1) + Bảng điều khiển thiết bị */}
         <Col xs={24} lg={8}>
-          <DevicePanel
-            devices={devices}
-            onToggleDevice={handleToggleDevice}
-            loadingMap={loadingMap}
-          />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <LightAlertBox currentLight={telemetry.light} />
+            <DevicePanel
+              devices={devices}
+              onToggleDevice={handleToggleDevice}
+              loadingMap={loadingMap}
+            />
+          </div>
         </Col>
       </Row>
     </div>
