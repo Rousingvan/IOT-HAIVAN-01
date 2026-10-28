@@ -24,8 +24,8 @@ PubSubClient mqttClient(espClient);
 unsigned long lastTelemetryTime = 0;
 const unsigned long TELEMETRY_INTERVAL = 2000; // Chu kỳ gửi dữ liệu cảm biến: 2 giây
 
-// Cấu hình cảnh báo nhấp nháy chu kỳ 2s (Đề 1)
-int lightAlertThreshold = 600;        // Ngưỡng ánh sáng X (mặc định 600 Lux)
+// Cấu hình cảnh báo nhấp nháy chu kỳ 2s trên chân D2 (PIN_LED_STATUS = GPIO 2)
+int lightAlertThreshold = 600;        // Ngưỡng ánh sáng X (mặc định 600 Lux, đồng bộ từ Web)
 bool isLightAlerting = false;         // Cờ báo vượt ngưỡng
 unsigned long lastBlinkTime = 0;      // Mốc thời gian chớp tắt LED
 bool alertLedState = false;           // Trạng thái chân LED nháy
@@ -50,7 +50,6 @@ void setupWiFi() {
   while (WiFi.status() != WL_CONNECTED && retry < 30) {
     delay(500);
     Serial.print(".");
-    digitalWrite(PIN_LED_STATUS, !digitalRead(PIN_LED_STATUS)); // Nhấp nháy LED
     retry++;
   }
 
@@ -58,7 +57,7 @@ void setupWiFi() {
     Serial.println("\n✅ WiFi đã kết nối thành công!");
     Serial.print("📍 Địa chỉ IP ESP32: ");
     Serial.println(WiFi.localIP());
-    digitalWrite(PIN_LED_STATUS, HIGH); // Sáng LED báo thành công
+    digitalWrite(PIN_LED_STATUS, LOW); // Mặc định TẮT đèn cảnh báo chân D2 khi mới khởi động
   } else {
     Serial.println("\n⚠️ Không thể kết nối WiFi. Hãy kiểm tra lại SSID/Password/2.4GHz.");
     WiFi.disconnect(true);
@@ -84,11 +83,20 @@ void onMqttCallback(char* topic, byte* payload, unsigned int length) {
     return;
   }
 
+  // 1. Nếu là gói tin đồng bộ ngưỡng cảnh báo ánh sáng X từ Web gửi xuống
+  if (doc.containsKey("threshold")) {
+    lightAlertThreshold = doc["threshold"].as<int>();
+    Serial.printf("⚙️ Đã cập nhật ngưỡng cảnh báo ánh sáng X = %d Lux từ Web!\n", lightAlertThreshold);
+    return;
+  }
+
   const char* requestId = doc["requestId"];
   const char* deviceCode = doc["deviceCode"];
   const char* action = doc["action"];
 
-  Serial.printf("⚡ Lệnh nhận: RequestId=%s, Device=%s, Action=%s\n", requestId, deviceCode, action);
+  if (!deviceCode || !action) return;
+
+  Serial.printf("⚡ Lệnh nhận: RequestId=%s, Device=%s, Action=%s\n", requestId ? requestId : "N/A", deviceCode, action);
 
   // Tìm kiếm thiết bị trong bảng cấu hình
   bool found = false;
@@ -160,7 +168,7 @@ void reconnectMQTT() {
 void setup() {
   Serial.begin(115200);
   pinMode(PIN_LED_STATUS, OUTPUT);
-  digitalWrite(PIN_LED_STATUS, LOW);
+  digitalWrite(PIN_LED_STATUS, LOW); // Mặc định TẮT đèn cảnh báo chân D2
 
   // Khởi tạo chân GPIO cho các Relay
   for (int i = 0; i < NUM_DEVICES; i++) {
@@ -194,7 +202,7 @@ void loop() {
 
   unsigned long now = millis();
 
-  // ĐỀ 1: Khi ánh sáng vượt ngưỡng X -> Nhấp nháy LED cảnh báo liên tục chu kỳ 2s (1s BẬT / 1s TẮT)
+  // ĐỀ 1: Khi ánh sáng vượt ngưỡng X -> Nhấp nháy LED cảnh báo chân D2 liên tục chu kỳ 2s (1s BẬT / 1s TẮT)
   if (isLightAlerting) {
     if (now - lastBlinkTime >= 1000) { // 1000ms đổi trạng thái một lần = chu kỳ 2000ms (2s)
       lastBlinkTime = now;
@@ -202,9 +210,10 @@ void loop() {
       digitalWrite(PIN_LED_STATUS, alertLedState ? HIGH : LOW);
     }
   } else {
-    // Khi an toàn, giữ sáng báo kết nối ổn định
-    if (WiFi.status() == WL_CONNECTED && mqttClient.connected()) {
-      digitalWrite(PIN_LED_STATUS, HIGH);
+    // Khi KHÔNG cảnh báo (ánh sáng <= ngưỡng X) -> TẮT HẲN đèn cảnh báo chân D2
+    if (alertLedState || digitalRead(PIN_LED_STATUS) == HIGH) {
+      alertLedState = false;
+      digitalWrite(PIN_LED_STATUS, LOW);
     }
   }
 
@@ -220,8 +229,13 @@ void loop() {
     int rawLdr = analogRead(PIN_LDR);
     // Chuyển đổi sang đơn vị Lux tương đối (0 - 1000 Lux)
     int lightLux = map(rawLdr, 0, 4095, 1000, 0);
-    // Kiểm tra vượt ngưỡng để kích hoạt nháy LED 2s
+
+    // Kiểm tra vượt ngưỡng để kích hoạt nháy LED 2s hoặc tắt ngay khi an toàn
     isLightAlerting = (lightLux > lightAlertThreshold);
+    if (!isLightAlerting) {
+      alertLedState = false;
+      digitalWrite(PIN_LED_STATUS, LOW);
+    }
 
     // Kiểm tra tính hợp lệ của số liệu
     if (isnan(temp) || isnan(humid)) {

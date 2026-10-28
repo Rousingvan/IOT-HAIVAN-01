@@ -20,6 +20,14 @@ export const setLightThreshold = (val) => {
     if (socketIo) {
       socketIo.emit('threshold_changed', { threshold: currentLightThreshold });
     }
+    // Đồng bộ ngưỡng X xuống ESP32 qua MQTT để chân D2 nhấp nháy đúng ngưỡng mới
+    if (mqttClient && mqttClient.connected) {
+      mqttClient.publish(
+        TOPICS.DEVICE_COMMAND,
+        JSON.stringify({ threshold: currentLightThreshold })
+      );
+      console.log(`📤 Đã đồng bộ ngưỡng X = ${currentLightThreshold} Lux xuống ESP32 qua MQTT`);
+    }
   }
   return currentLightThreshold;
 };
