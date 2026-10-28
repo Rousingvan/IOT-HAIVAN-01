@@ -1,5 +1,5 @@
-import React from 'react';
-import { Card, Typography, Space, Tag } from 'antd';
+import React, { useState } from 'react';
+import { Card, Typography, Space, Tag, Radio } from 'antd';
 import {
   AreaChart,
   Area,
@@ -11,16 +11,9 @@ import {
   Legend,
 } from 'recharts';
 import dayjs from 'dayjs';
-import { BellTwoTone } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
 
-/**
- * Component CustomTooltip: Tùy biến hộp thoại hiển thị dữ liệu khi rê chuột (hover) vào từng điểm trên biểu đồ
- * @param {boolean} active - Cờ tự động bật true khi chuột nằm trên 1 điểm đo
- * @param {Array} payload - Mảng chứa thông số dữ liệu của các đường (Nhiệt độ, Độ ẩm, Ánh sáng) tại điểm hover
- * @param {string} label - Giá trị của trục X tại điểm hover (mốc thời gian HH:mm:ss)
- */
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
@@ -34,24 +27,25 @@ const CustomTooltip = ({ active, payload, label }) => {
           fontSize: 12,
         }}
       >
-        {/* Tiêu đề Tooltip: Hiển thị mốc thời gian đo */}
         <div style={{ fontWeight: 600, color: '#374151', marginBottom: 4 }}>
           {label}
         </div>
+        {payload.map((item, index) => {
+          let unit = '';
+          if (item.name === 'Nhiệt độ') unit = '°C';
+          else if (item.name === 'Độ ẩm') unit = '%';
+          else if (item.name === 'Ánh sáng') unit = 'Lux';
+          else if (item.name === 'Độ bụi') unit = 'mg/m³';
 
-        {/* Lặp qua mảng payload để in từng giá trị đo kèm đơn vị tương ứng */}
-        {payload
-          //.filter((item) => item.name !== 'Ánh sáng')
-          .map((item, index) => (
-            <div key={index} style={{ color: item.color, margin: '2px 0', display: 'flex', justifyItems: 'space-between', gap: 12 }}>
-              {/* Dấu chấm tròn cùng màu với đường sóng */}
-              {/* <span style={{ width: 4, height: 4, borderRadius: '50%', backgroundColor: item.color, display: 'inline-block' }} /> */}
+          return (
+            <div key={index} style={{ color: item.color, margin: '2px 0', display: 'flex', justifyContent: 'space-between', gap: 12 }}>
               <span>{item.name}: </span>
               <span style={{ fontWeight: 600 }}>
-                {item.value} {item.name === 'Nhiệt độ' ? '°C' : item.name === 'Độ ẩm' ? '%' : 'Lux'}
+                {item.value} {unit}
               </span>
             </div>
-          ))}
+          );
+        })}
       </div>
     );
   }
@@ -59,17 +53,18 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 /**
- * Component SensorAreaChart: Vẽ biểu đồ miền biến động cảm biến theo thời gian thực (20 điểm gần nhất)
- * @param {Array} data - Mảng dữ liệu lịch sử cảm biến truyền từ DashboardPage
- * @param {boolean} loading - Cờ bật hiệu ứng chờ tải (Skeleton loading) của Ant Design Card
+ * Component SensorAreaChart: Biểu đồ thời gian thực (hỗ trợ hiển thị Độ Bụi Đề 2)
  */
 export default function SensorAreaChart({ data = [], loading = false }) {
-  // Chuẩn hóa dữ liệu thô: Format lại chuỗi thời gian sang HH:mm:ss và gán tên tiếng Việt
+  // Chế độ xem: 'ALL' (Tất cả), 'ENV' (Nhiệt/Ẩm/Sáng), 'DUST' (Độ bụi riêng biệt)
+  const [chartMode, setChartMode] = useState('ALL');
+
   const formattedData = data.map((item) => ({
     time: item.measured_at ? dayjs(item.measured_at).format('HH:mm:ss') : item.time || '',
     'Nhiệt độ': item.temperature,
     'Độ ẩm': item.humidity,
     'Ánh sáng': item.light,
+    'Độ bụi': item.dust !== undefined ? item.dust : 0,
   }));
 
   return (
@@ -83,7 +78,6 @@ export default function SensorAreaChart({ data = [], loading = false }) {
       }}
       bodyStyle={{ padding: '18px 20px' }}
     >
-      {/* Header Biểu đồ: Tiêu đề bên trái và các Tag màu chú giải đơn vị bên phải */}
       <div
         style={{
           display: 'flex',
@@ -96,97 +90,128 @@ export default function SensorAreaChart({ data = [], loading = false }) {
       >
         <div>
           <Title level={4} style={{ margin: 0, color: '#111827', fontWeight: 600, fontSize: 16 }}>
-            Biểu đồ biến động cảm biến
+            Biểu đồ biến động cảm biến (Realtime)
           </Title>
           <Text style={{ fontSize: 12, color: '#6B7280' }}>
             20 chu kỳ đo đạc gần nhất
           </Text>
         </div>
 
-        {/* Nhãn phân biệt màu sắc và đơn vị đo */}
-        <Space size="small">
-          <Tag color="orange" style={{ margin: 0 }}>Nhiệt độ (°C)</Tag>
-          <Tag color="blue" style={{ margin: 0 }}>Độ ẩm (%)</Tag>
-          <Tag color="gold" style={{ margin: 0 }}>Ánh sáng (Lux)</Tag>
-        </Space>
+        {/* Bộ chọn chế độ hiển thị & Tag chú giải */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <Radio.Group
+            size="small"
+            value={chartMode}
+            onChange={(e) => setChartMode(e.target.value)}
+            buttonStyle="solid"
+          >
+            <Radio.Button value="ALL">Tất cả</Radio.Button>
+            <Radio.Button value="DUST">Độ Bụi (Đề 2)</Radio.Button>
+            <Radio.Button value="ENV">Môi trường</Radio.Button>
+          </Radio.Group>
+
+          <Space size="small">
+            {(chartMode === 'ALL' || chartMode === 'ENV') && (
+              <>
+                <Tag color="orange" style={{ margin: 0 }}>Nhiệt độ (°C)</Tag>
+                <Tag color="blue" style={{ margin: 0 }}>Độ ẩm (%)</Tag>
+                <Tag color="gold" style={{ margin: 0 }}>Ánh sáng (Lux)</Tag>
+              </>
+            )}
+            {(chartMode === 'ALL' || chartMode === 'DUST') && (
+              <Tag color="purple" style={{ margin: 0 }}>Độ bụi (mg/m³)</Tag>
+            )}
+          </Space>
+        </div>
       </div>
 
-      {/* Khung chứa biểu đồ với chiều cao cố định 320px */}
       <div style={{ width: '100%', height: 320 }}>
-        {/* ResponsiveContainer: Tự động co giãn 100% chiều rộng & chiều cao theo màn hình */}
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={formattedData}
             margin={{ top: 10, right: 10, left: -15, bottom: 0 }}
           >
-            {/* defs: Định nghĩa hiệu ứng chuyển sắc Gradient SVG cho màu nền dưới các đường sóng */}
             <defs>
-              {/* Gradient Nhiệt độ (Màu cam #E05318) */}
               <linearGradient id="tempGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#E05318" stopOpacity={0.35} />
                 <stop offset="95%" stopColor="#E05318" stopOpacity={0.0} />
               </linearGradient>
 
-              {/* Gradient Độ ẩm (Màu xanh dương #0284C7) */}
               <linearGradient id="humidGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#0284C7" stopOpacity={0.35} />
                 <stop offset="95%" stopColor="#0284C7" stopOpacity={0.0} />
               </linearGradient>
 
-              {/* Gradient Ánh sáng (Màu vàng hổ phách #D97706) */}
               <linearGradient id="lightGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#D97706" stopOpacity={0.25} />
                 <stop offset="95%" stopColor="#D97706" stopOpacity={0.0} />
               </linearGradient>
+
+              {/* Gradient Độ Bụi (Màu tím #8B5CF6) */}
+              <linearGradient id="dustGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.4} />
+                <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0.0} />
+              </linearGradient>
             </defs>
 
-            {/* CartesianGrid: Kẻ lưới đứt nét ngang (vertical={false} ẩn đường kẻ dọc giúp biểu đồ thoáng) */}
             <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
-
-            {/* XAxis: Trục hoành hiển thị mốc thời gian (time) */}
             <XAxis dataKey="time" stroke="#9CA3AF" fontSize={11} tickLine={false} />
+            
+            {/* Trục Y */}
+            {chartMode === 'DUST' ? (
+              <YAxis domain={[0, 1.0]} stroke="#8B5CF6" fontSize={11} tickLine={false} axisLine={false} />
+            ) : (
+              <YAxis stroke="#9CA3AF" fontSize={11} tickLine={false} axisLine={false} />
+            )}
 
-            {/* YAxis: Trục tung hiển thị thang giá trị đo */}
-            <YAxis stroke="#9CA3AF" fontSize={11} tickLine={false} axisLine={false} />
-
-            {/* Tooltip: Hộp thông tin chi tiết khi hover chuột vào điểm */}
             <Tooltip content={<CustomTooltip />} />
-
-            {/* Legend: Chú thích tên các đường biểu đồ ở phía trên */}
             <Legend verticalAlign="top" height={32} />
 
-            {/* Area Nhiệt độ: Đường sóng màu cam cong mượt (type="monotone") */}
-            <Area
-              type="linear"
-              dataKey="Nhiệt độ"
-              stroke="#E05318"
-              strokeWidth={2}
-              fillOpacity={1}
-              fill="url(#tempGradient)"
-              activeDot={{ r: 5 }}
-            />
+            {/* Các đường hiển thị theo mode */}
+            {(chartMode === 'ALL' || chartMode === 'ENV') && (
+              <>
+                <Area
+                  type="monotone"
+                  dataKey="Nhiệt độ"
+                  stroke="#E05318"
+                  strokeWidth={2}
+                  fillOpacity={1}
+                  fill="url(#tempGradient)"
+                  activeDot={{ r: 5 }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="Độ ẩm"
+                  stroke="#0284C7"
+                  strokeWidth={2}
+                  fillOpacity={1}
+                  fill="url(#humidGradient)"
+                  activeDot={{ r: 5 }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="Ánh sáng"
+                  stroke="#D97706"
+                  strokeWidth={1.5}
+                  fillOpacity={1}
+                  fill="url(#lightGradient)"
+                  activeDot={{ r: 4 }}
+                />
+              </>
+            )}
 
-            {/* Area Độ ẩm: Đường sóng màu xanh dương */}
-            <Area
-              type="linear"
-              dataKey="Độ ẩm"
-              stroke="#0284C7"
-              strokeWidth={2}
-              fillOpacity={1}
-              fill="url(#humidGradient)"
-              activeDot={{ r: 5 }}
-            />
-
-            {/* Area Ánh sáng: Đường sóng màu vàng hổ phách */}
-            <Area
-              type="linear"
-              dataKey="Ánh sáng"
-              stroke="#D97706"
-              strokeWidth={1.5}
-              fillOpacity={1}
-              fill="url(#lightGradient)"
-              activeDot={{ r: 4 }}
-            />
+            {/* Đường biểu đồ Độ Bụi */}
+            {(chartMode === 'ALL' || chartMode === 'DUST') && (
+              <Area
+                type="monotone"
+                dataKey="Độ bụi"
+                stroke="#8B5CF6"
+                strokeWidth={2.5}
+                fillOpacity={1}
+                fill="url(#dustGradient)"
+                activeDot={{ r: 6 }}
+              />
+            )}
           </AreaChart>
         </ResponsiveContainer>
       </div>

@@ -13,7 +13,7 @@ const actionHistorySchema = new mongoose.Schema(
     },
     action: {
       type: String,
-      enum: ['ON', 'OFF'],
+      enum: ['ON', 'OFF', 'ALERT', 'WARNING'],
       required: true,
     },
     command_time: {

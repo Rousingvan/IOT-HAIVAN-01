@@ -26,10 +26,13 @@
 // =========================================================================
 // 3. CẤU HÌNH CHÂN GPIO
 // =========================================================================
-#define PIN_DHT22 4 // Chân cảm biến DHT22 (Nhiệt độ & Độ ẩm)
+#define PIN_DHT22 4      // Chân cảm biến DHT22 (Nhiệt độ & Độ ẩm)
 #define DHTTYPE DHT22
 #define PIN_LDR 34       // Chân Analog ADC1 cảm biến Quang trở Ánh sáng
-#define PIN_LED_STATUS 2 // LED onboard báo trạng thái kết nối
+
+// ĐỀ 2: ĐÈN CẢNH BÁO ĐỘ BỤI (DUST ALERT) & ĐÈN 4: Chân GPIO 21
+#define PIN_LED_ALERT 21 
+#define PIN_LED_STATUS 2 // LED onboard trên ESP32 (GPIO 2)
 
 // Định nghĩa mảng cấu hình thiết bị Relay (Kiến trúc mở rộng Plug-and-Play)
 struct DeviceMapping {
@@ -39,15 +42,17 @@ struct DeviceMapping {
   bool activeLow; // Relay kích mức thấp (LOW = ON) hay kích mức cao (HIGH = ON)
 };
 
-// Khai báo danh sách thiết bị:
+// Khai báo danh sách thiết bị Relay/Đèn điều khiển:
 // - LAMP_01: Đèn LED 1 trên chân GPIO 18
 // - LAMP_02: Đèn LED 2 trên chân GPIO 19
-// - LAMP_03: Đèn LED 3 trên chân GPIO 21
-// - LED_ONBOARD: Đèn LED trên bo ESP32 (GPIO 2)
-const DeviceMapping DEVICES[] = {{"LAMP_01", 18, true, false},
-                                 {"LAMP_02", 19, true, false},
-                                 {"LAMP_03", 21, true, false},
-                                 {"LED_ONBOARD", 2, true, false}};
+// - LAMP_03: Đèn LED 3 trên chân GPIO 22
+// - LAMP_04: Đèn LED 4 trên chân GPIO 21 (Đồng thời là Đèn cảnh báo độ bụi khi >= 0.70)
+const DeviceMapping DEVICES[] = {
+  {"LAMP_01", 18, true, false},
+  {"LAMP_02", 19, true, false},
+  {"LAMP_03", 22, true, false},
+  {"LAMP_04", 21, true, false}
+};
 
 const int NUM_DEVICES = sizeof(DEVICES) / sizeof(DEVICES[0]);
 

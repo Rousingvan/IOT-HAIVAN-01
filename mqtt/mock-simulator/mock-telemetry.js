@@ -13,7 +13,7 @@ const client = mqtt.connect(BROKER_URL, {
 });
 
 client.on('connect', () => {
-  console.log(`✅ Mock ESP32 đã kết nối Broker! Bắt đầu phát dữ liệu cảm biến mỗi 3 giây...`);
+  console.log(`✅ Mock ESP32 đã kết nối Broker! Bắt đầu phát dữ liệu cảm biến (Nhiệt độ, Độ ẩm, Ánh sáng, Độ Bụi) mỗi 3 giây...`);
 
   let count = 0;
   setInterval(() => {
@@ -22,12 +22,15 @@ client.on('connect', () => {
     const temp = +(26 + Math.sin(count / 5) * 5 + (Math.random() * 0.8)).toFixed(1);
     const humid = +(65 + Math.cos(count / 4) * 12 + (Math.random() * 1.5)).toFixed(1);
     const light = Math.floor(480 + Math.sin(count / 3) * 220 + Math.random() * 30);
+    // ĐỀ 2: Hardware random 1 cảm biến Dust (100 đơn vị: 0.00 -> 1.00 mg/m3)
+    const dust = Number((Math.floor(Math.random() * 101) / 100).toFixed(2));
 
     const payload = {
       deviceId: 'ESP32_DEV_KIT_V1',
       temperature: temp,
       humidity: humid,
       light: light,
+      dust: dust,
       timestamp: new Date().toISOString(),
     };
 

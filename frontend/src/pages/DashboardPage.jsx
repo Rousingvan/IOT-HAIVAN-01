@@ -4,39 +4,35 @@ import {
   FireFilled,
   CloudFilled,
   SunFilled,
-  CloudTwoTone,
-  UnderlineOutlined,
 } from '@ant-design/icons';
 import SensorCard from '../components/SensorCard';
 import SensorAreaChart from '../components/SensorAreaChart';
 import DevicePanel from '../components/DevicePanel';
 import AlertBanner from '../components/AlertBanner';
+import DustAlertBox from '../components/DustAlertBox';
 import { apiService } from '../services/api';
 import { getSocket } from '../services/socket';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
-/**gu
+/**
  * ==============================================================================
- * TRANG: DashboardPage (Tổng Quan Hệ Thống)
- * CHỨC NĂNG CHÍNH:
- * - Trung tâm điều phối dữ liệu thời gian thực (Realtime Core) của ứng dụng.
- * - Tải dữ liệu ban đầu song song qua Promise.all (Lịch sử 20 bản ghi + Danh sách thiết bị).
- * - Mở kết nối Socket.IO nhận dữ liệu cảm biến mới nhất và cập nhật tức thời (Push model).
- * - Render 4 khối giao diện:
- *     1. AlertBanner: Thanh cảnh báo đỏ khi nhiệt độ > 35°C.
- *     2. 3 Thẻ SensorCard: Nhiệt độ, Độ ẩm, Ánh sáng.
- *     3. SensorAreaChart: Biểu đồ sóng 20 điểm đo gần nhất.
- *     4. DevicePanel: Bảng công tắc điều khiển bật/tắt thiết bị.
- * 
+ * TRANG: DashboardPage (ĐỀ SỐ 2: CẢM BIẾN ĐỘ BỤI + CẢNH BÁO >= 0.70 mg/m3)
+ * ==============================================================================
+ * HÀNG 4 THẺ CẢM BIẾN:
+ * 1. Nhiệt độ (°C)
+ * 2. Độ ẩm (%)
+ * 3. Ánh sáng (Lux)
+ * 4. Độ bụi (mg/m3) - ĐỀ 2
  * ==============================================================================
  */
 export default function DashboardPage() {
-  // 1. State lưu trữ giá trị đo mới nhất của cảm biến (Dùng cho 3 thẻ SensorCard)
+  // 1. State lưu trữ giá trị đo mới nhất của cảm biến (4 đại lượng)
   const [telemetry, setTelemetry] = useState({
     temperature: 28.5,
     humidity: 68.2,
     light: 520,
+    dust: 0.25,
     measured_at: new Date().toISOString(),
   });
 
@@ -49,7 +45,7 @@ export default function DashboardPage() {
   // 4. State cờ loading biểu đồ khi vừa vào trang
   const [loadingChart, setLoadingChart] = useState(false);
 
-  // 5. State quản lý loading riêng cho từng nút gạt thiết bị { LED1: true, FAN: false }
+  // 5. State quản lý loading riêng cho từng nút gạt thiết bị
   const [loadingMap, setLoadingMap] = useState({});
 
   // 6. State bật/tắt thanh banner cảnh báo nhiệt độ cao
@@ -63,7 +59,6 @@ export default function DashboardPage() {
     const fetchData = async () => {
       setLoadingChart(true);
       try {
-        // Gọi API tối ưu thời gian tải trang
         const [devs, hist] = await Promise.all([
           apiService.getDevices(),
           apiService.getTelemetryHistory(20), // Tải 20 bản ghi gần nhất
@@ -71,7 +66,6 @@ export default function DashboardPage() {
         setDevices(devs);
         setHistory(hist);
 
-        // Lấy bản ghi mới nhất trong lịch sử làm giá trị hiển thị ban đầu
         if (hist.length > 0) {
           const latest = hist[hist.length - 1];
           setTelemetry(latest);
@@ -95,35 +89,42 @@ export default function DashboardPage() {
       else setShowAlert(false);
     });
 
-    // C. Lắng nghe sự kiện trạng thái thiết bị thay đổi (khi có người khác bật/tắt thiết bị)
+    // C. Lắng nghe sự kiện trạng thái thiết bị thay đổi
     socket.on('device_state_changed', (updatedDevice) => {
       setDevices((prev) =>
-        prev.map((d) => (d.device_code === updatedDevice.device_code ? updatedDevice : d))
+        prev.map((d) =>
+          d.device_code === updatedDevice.device_code
+            ? { ...d, current_state: updatedDevice.current_state }
+            : d
+        )
       );
     });
 
-    // D. Cleanup function: Hủy đăng ký listener khi rời khỏi trang để chống rò rỉ bộ nhớ (Memory Leak)
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
       socket.off('telemetry');
       socket.off('device_state_changed');
+      if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
 
-  // Hàm xử lý gửi lệnh bật/tắt thiết bị xuống Backend
+  // Xử lý khi người dùng gạt công tắc trên DevicePanel
   const handleToggleDevice = async (deviceCode, action) => {
-    setLoadingMap((prev) => ({ ...prev, [deviceCode]: true })); // Bật loading riêng cho nút đó
+    setLoadingMap((prev) => ({ ...prev, [deviceCode]: true }));
     try {
       const res = await apiService.toggleDevice(deviceCode, action);
-      // Cập nhật trạng thái tức thời lên giao diện (Optimistic UI)
       setDevices((prev) =>
-        prev.map((d) => (d.device_code === deviceCode ? { ...d, current_state: action } : d))
+        prev.map((d) =>
+          d.device_code === deviceCode ? { ...d, current_state: res.currentState || action } : d
+        )
       );
-      return res;
+    } catch (err) {
+      console.error('Toggle error:', err);
     } finally {
-      setLoadingMap((prev) => ({ ...prev, [deviceCode]: false })); // Tắt loading
+      setLoadingMap((prev) => ({ ...prev, [deviceCode]: false }));
     }
   };
+
+  const isDustDanger = Number(telemetry.dust || 0) >= 0.70;
 
   return (
     <div>
@@ -136,15 +137,15 @@ export default function DashboardPage() {
 
       {/* 2. TIÊU ĐỀ TRANG DASHBOARD */}
       <div style={{ marginBottom: 20 }}>
-        <Title level={3} style={{ margin: 0, textShadow: '2px 2px 2px black', textAlign: 'left', color: '#f55d04ff', fontWeight: 700, fontSize: 40 }}>
-          Dashboard
+        <Title level={3} style={{ margin: 0, textShadow: '2px 2px 2px black', textAlign: 'left', color: '#f55d04ff', fontWeight: 700, fontSize: 36 }}>
+          Hệ Thống Giám Sát & Điều Khiển IoT (Đề 2: Độ Bụi)
         </Title>
       </div>
 
-      {/* 3. HÀNG 3 THẺ CẢM BIẾN (Responsive: sm={8} chia 3 cột trên PC, xs={24} xếp chồng trên Mobile) */}
+      {/* 3. HÀNG 4 THẺ CẢM BIẾN (Responsive: lg={6} md={12} xs={24}) */}
       <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
-        {/* Thẻ 1: Nhiệt độ phòng (Có cảnh báo đỏ khi > 35°C) */}
-        <Col xs={24} sm={8}>
+        {/* Thẻ 1: Nhiệt độ phòng */}
+        <Col xs={24} sm={12} lg={6}>
           <SensorCard
             title="Nhiệt độ phòng"
             value={telemetry.temperature}
@@ -159,7 +160,7 @@ export default function DashboardPage() {
         </Col>
 
         {/* Thẻ 2: Độ ẩm không khí */}
-        <Col xs={24} sm={8}>
+        <Col xs={24} sm={12} lg={6}>
           <SensorCard
             title="Độ ẩm không khí"
             value={telemetry.humidity}
@@ -173,9 +174,9 @@ export default function DashboardPage() {
         </Col>
 
         {/* Thẻ 3: Cường độ ánh sáng */}
-        <Col xs={24} sm={8}>
+        <Col xs={24} sm={12} lg={6}>
           <SensorCard
-            title="Cường độ ánh sáng "
+            title="Cường độ ánh sáng"
             value={telemetry.light}
             unit="Lux"
             icon={<SunFilled />}
@@ -185,22 +186,43 @@ export default function DashboardPage() {
             statusText={telemetry.light > 600 ? 'Sáng mạnh' : 'Bình thường'}
           />
         </Col>
+
+        {/* Thẻ 4: Cảm biến độ bụi (ĐỀ 2) */}
+        <Col xs={24} sm={12} lg={6}>
+          <SensorCard
+            title="Độ bụi (Dust)"
+            value={telemetry.dust !== undefined ? telemetry.dust : '--'}
+            unit="mg/m³"
+            icon={<CloudFilled />}
+            color="#8B5CF6"
+            bgColor="#F5F3FF"
+            borderColor="#DDD6FE"
+            isAlert={isDustDanger}
+            statusText={isDustDanger ? 'Bụi vượt ngưỡng (≥0.7)' : 'Không khí sạch'}
+          />
+        </Col>
       </Row>
 
-      {/* 4. HÀNG BIỂU ĐỒ (Trái - lg={16}) + BẢNG ĐIỀU KHIỂN THIẾT BỊ (Phải - lg={8}) */}
+      {/* 4. HÀNG BIỂU ĐỒ (Trái - lg={16}) + BẢNG CẢNH BÁO BỤI & ĐIỀU KHIỂN (Phải - lg={8}) */}
       <Row gutter={[16, 16]}>
         {/* Cột trái: Biểu đồ Recharts chiếm 16/24 phần (~66.7%) */}
         <Col xs={24} lg={16}>
           <SensorAreaChart data={history} loading={loadingChart} />
         </Col>
 
-        {/* Cột phải: Bảng điều khiển thiết bị chiếm 8/24 phần (~33.3%) */}
+        {/* Cột phải: Box Cảnh Báo Độ Bụi (Đề 2) + Bảng điều khiển thiết bị */}
         <Col xs={24} lg={8}>
-          <DevicePanel
-            devices={devices}
-            onToggleDevice={handleToggleDevice}
-            loadingMap={loadingMap}
-          />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {/* Box Đèn Cảnh Báo Độ Bụi (Đề 2) */}
+            <DustAlertBox currentDust={telemetry.dust || 0} />
+
+            {/* Bảng điều khiển công tắc Relay (Đèn 1, 2, 3, 4) */}
+            <DevicePanel
+              devices={devices}
+              onToggleDevice={handleToggleDevice}
+              loadingMap={loadingMap}
+            />
+          </div>
         </Col>
       </Row>
     </div>

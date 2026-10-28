@@ -495,4 +495,31 @@ export const apiService = {
       };
     }
   },
+
+  // NHÓM 5: CẢNH BÁO ĐỘ BỤI (ĐỀ 2)
+  getDustAlertStats: async () => {
+    try {
+      const res = await apiClient.get('/action-history/alert-stats');
+      return res.data;
+    } catch {
+      return { totalAlerts: 0, daily: [], monthly: [] };
+    }
+  },
+  getDustThreshold: async () => {
+    try {
+      const res = await apiClient.get('/alerts/dust-threshold');
+      return res.data.threshold;
+    } catch {
+      return Number(localStorage.getItem('iot_dust_threshold_y') || 0.70);
+    }
+  },
+  updateDustThreshold: async (threshold) => {
+    localStorage.setItem('iot_dust_threshold_y', String(threshold));
+    try {
+      const res = await apiClient.post('/alerts/dust-threshold', { threshold });
+      return res.data.threshold;
+    } catch {
+      return Number(threshold);
+    }
+  },
 };
