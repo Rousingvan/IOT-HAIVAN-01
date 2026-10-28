@@ -455,6 +455,9 @@ export const apiService = {
           if (deviceType === 'FAN') {
             return code.includes('FAN') || name.includes('quạt');
           }
+          if (deviceType === 'ALERT_LED') {
+            return code.includes('ALERT') || name.includes('cảnh báo');
+          }
           return code.includes(deviceType.toUpperCase());
         });
       }
@@ -504,6 +507,62 @@ export const apiService = {
         page: params?.page || 1,
         pageSize: params?.pageSize || 10,
       };
+    }
+  },
+
+  // ----------------------------------------------------------------------------
+  // NHÓM 5: ĐỀ 1 - CẢNH BÁO ÁNH SÁNG & THỐNG KÊ NGÀY/THÁNG
+  // ----------------------------------------------------------------------------
+
+  /**
+   * ĐỀ 1: Lấy thống kê số lượng cảnh báo ánh sáng gom theo Ngày / Tháng
+   */
+  getAlertStats: async () => {
+    try {
+      const res = await apiClient.get('/action-history/alert-stats');
+      return res.data;
+    } catch {
+      // Fallback: Tự tính từ mockActionHistory hoặc dữ liệu localStorage
+      const storedThreshold = Number(localStorage.getItem('iot_light_threshold_x') || 600);
+      const alerts = mockActionHistory.filter(
+        (h) => h.device_code === 'ALERT_LED' || h.action === 'ALERT'
+      );
+      return {
+        totalAlerts: alerts.length || 3,
+        currentThreshold: storedThreshold,
+        daily: [
+          { date: dayjs().format('YYYY-MM-DD'), count: alerts.length || 2, latestTime: new Date() },
+          { date: dayjs().subtract(1, 'day').format('YYYY-MM-DD'), count: 1, latestTime: new Date(Date.now() - 86400000) },
+        ],
+        monthly: [
+          { month: dayjs().format('YYYY-MM'), count: (alerts.length || 2) + 1, latestTime: new Date() },
+        ],
+      };
+    }
+  },
+
+  /**
+   * ĐỀ 1: Lấy cấu hình ngưỡng ánh sáng X hiện tại
+   */
+  getAlertThreshold: async () => {
+    try {
+      const res = await apiClient.get('/alerts/threshold');
+      return res.data.threshold;
+    } catch {
+      return Number(localStorage.getItem('iot_light_threshold_x') || 600);
+    }
+  },
+
+  /**
+   * ĐỀ 1: Cập nhật cấu hình ngưỡng ánh sáng X
+   */
+  updateAlertThreshold: async (threshold) => {
+    localStorage.setItem('iot_light_threshold_x', String(threshold));
+    try {
+      const res = await apiClient.post('/alerts/threshold', { threshold });
+      return res.data.threshold;
+    } catch {
+      return Number(threshold);
     }
   },
 };

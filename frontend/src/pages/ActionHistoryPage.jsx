@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Typography, Select, Space, Tag, Row, Col } from 'antd';
+import { Card, Table, Typography, Select, Space, Tag, Row, Col, Button, Modal, Tabs } from 'antd';
 import {
   CheckCircleFilled,
   CloseCircleFilled,
   ClockCircleFilled,
   UserOutlined,
   ThunderboltOutlined,
+  AlertFilled,
+  BarChartOutlined,
+  CalendarOutlined,
 } from '@ant-design/icons';
+import { useSearchParams } from 'react-router-dom';
 import VariableTimeRangeFilter from '../components/VariableTimeRangeFilter';
 import { apiService } from '../services/api';
 import dayjs from 'dayjs';
@@ -38,13 +42,19 @@ const { Option } = Select;
  * ==============================================================================
  */
 export default function ActionHistoryPage() {
+  const [searchParams] = useSearchParams();
+  const urlDeviceCode = searchParams.get('deviceCode');
+
   // 1. State mảng dữ liệu lịch sử thao tác
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
 
   // 2. State các bộ lọc
-  const [deviceType, setDeviceType] = useState('ALL');       // Lọc theo Loại thiết bị (LAMP / FAN)
-  const [actionFilter, setActionFilter] = useState('ALL');   // Lọc theo Hành động (ON / OFF)
+  const [deviceType, setDeviceType] = useState(() => {
+    if (urlDeviceCode === 'ALERT_LED') return 'ALERT_LED';
+    return 'ALL';
+  });
+  const [actionFilter, setActionFilter] = useState('ALL');   // Lọc theo Hành động (ON / OFF / ALERT)
   const [statusFilter, setStatusFilter] = useState('ALL');   // Lọc theo Trạng thái (SUCCESS / TIMEOUT / FAILED)
   const [userFilter, setUserFilter] = useState('ALL');       // Lọc theo Người thực hiện (admin / student)
 
@@ -53,6 +63,36 @@ export default function ActionHistoryPage() {
 
   // 4. State quản lý phân trang
   const [pagination, setPagination] = useState({ current: 1, pageSize: 5, total: 0 });
+
+  // 5. ĐỀ 1: State Thống kê số lượng cảnh báo trong các ngày / tháng
+  const [alertStats, setAlertStats] = useState({
+    totalAlerts: 0,
+    currentThreshold: 600,
+    daily: [],
+    monthly: [],
+  });
+  const [statsModalOpen, setStatsModalOpen] = useState(false);
+
+  // Tải dữ liệu thống kê cảnh báo theo ngày / tháng
+  const fetchAlertStats = async () => {
+    try {
+      const stats = await apiService.getAlertStats();
+      if (stats) setAlertStats(stats);
+    } catch (e) {
+      console.warn('Lỗi tải thống kê cảnh báo:', e);
+    }
+  };
+
+  useEffect(() => {
+    fetchAlertStats();
+  }, []);
+
+  // Tự động set filter nếu có URL param deviceCode=ALERT_LED
+  useEffect(() => {
+    if (urlDeviceCode === 'ALERT_LED') {
+      setDeviceType('ALERT_LED');
+    }
+  }, [urlDeviceCode]);
 
   // Hàm gọi API lấy dữ liệu lịch sử từ Backend
   const fetchData = async (params = {}) => {
@@ -169,27 +209,48 @@ export default function ActionHistoryPage() {
       title: 'Thiết bị',
       dataIndex: 'device_name',
       key: 'device_name',
-      render: (name, record) => (
-        <span>
-          <strong>{name}</strong>{' '}
-          <Text type="secondary" style={{ fontSize: 11 }}>({record.device_code})</Text>
-        </span>
-      ),
+      render: (name, record) => {
+        const isAlert =
+          record.device_code === 'ALERT_LED' ||
+          record.action === 'ALERT' ||
+          (name && name.toLowerCase().includes('cảnh báo'));
+
+        return (
+          <span>
+            {isAlert && (
+              <Tag color="error" icon={<AlertFilled />} style={{ marginRight: 6, fontWeight: 600 }}>
+                CẢNH BÁO
+              </Tag>
+            )}
+            <strong>{name}</strong>{' '}
+            <Text type="secondary" style={{ fontSize: 11 }}>({record.device_code})</Text>
+          </span>
+        );
+      },
     },
     {
       title: 'Hành động',
       dataIndex: 'action',
       key: 'action',
-      width: 100,
+      width: 110,
       align: 'center',
-      render: (action) => (
-        <Tag
-          color={action === 'ON' ? 'orange' : 'default'}
-          style={{ fontWeight: 600, padding: '2px 10px' }}
-        >
-          {action === 'ON' ? 'BẬT' : 'TẮT'}
-        </Tag>
-      ),
+      render: (action) => {
+        if (action === 'ALERT' || action === 'WARNING') {
+          return (
+            <Tag color="error" style={{ fontWeight: 700, padding: '2px 10px' }}>
+              CẢNH BÁO
+            </Tag>
+          );
+        }
+        return (
+          <Tag
+            color={action === 'ON' ? 'orange' : 'default'}
+            style={{ fontWeight: 600, padding: '2px 10px' }}
+          >
+            {action === 'ON' ? 'BẬT' : 'TẮT'}
+          </Tag>
+        );
+      },
     },
     {
       title: 'Thời gian',
@@ -219,21 +280,182 @@ export default function ActionHistoryPage() {
 
   return (
     <div>
-      {/* 1. TIÊU ĐỀ TRANG */}
-      <div style={{ marginBottom: 18 }}>
-        <Title level={3} style={{ margin: 0, color: '#111827', fontWeight: 700, fontSize: 20 }}>
-          Lịch sử điều khiển thiết bị
-        </Title>
+      {/* 1. TIÊU ĐỀ TRANG & NÚT XEM THỐNG KÊ CHI TIẾT */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 16,
+          flexWrap: 'wrap',
+          gap: 10,
+        }}
+      >
+        <div>
+          <Title level={3} style={{ margin: 0, color: '#111827', fontWeight: 700, fontSize: 20 }}>
+            Lịch sử điều khiển thiết bị
+          </Title>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            Giám sát toàn bộ lệnh điều khiển và các sự kiện cảnh báo ánh sáng tự động
+          </Text>
+        </div>
+
+        <Button
+          type="primary"
+          danger
+          icon={<BarChartOutlined />}
+          onClick={() => setStatsModalOpen(true)}
+          style={{ borderRadius: 6, fontWeight: 600 }}
+        >
+          Thống Kê Cảnh Báo (Đề 1)
+        </Button>
       </div>
 
-      {/* 2. THANH LỌC THỜI GIAN LINH HOẠT */}
+      {/* 2. ĐỀ 1: 3 THẺ THỐNG KÊ SỐ LƯỢNG CẢNH BÁO THEO NGÀY / THÁNG */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 18 }}>
+        {/* Thẻ 1: Tổng số lượt cảnh báo */}
+        <Col xs={24} sm={8}>
+          <Card
+            style={{
+              borderRadius: 12,
+              background: '#FEF2F2',
+              border: '1px solid #FECACA',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
+            }}
+            bodyStyle={{ padding: '14px 16px' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <Text style={{ fontSize: 12, color: '#991B1B', fontWeight: 600 }}>
+                  TỔNG SỐ LẦN CẢNH BÁO
+                </Text>
+                <div style={{ fontSize: 24, fontWeight: 700, color: '#DC2626', marginTop: 4 }}>
+                  {alertStats.totalAlerts} <span style={{ fontSize: 13, fontWeight: 500 }}>lượt</span>
+                </div>
+              </div>
+              <div
+                style={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: 10,
+                  background: '#FEE2E2',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <AlertFilled style={{ fontSize: 22, color: '#DC2626' }} />
+              </div>
+            </div>
+            <div style={{ marginTop: 8, fontSize: 11, color: '#7F1D1D' }}>
+              Ngưỡng kích hoạt: <strong>{alertStats.currentThreshold || 600} Lux</strong>
+            </div>
+          </Card>
+        </Col>
+
+        {/* Thẻ 2: Thống kê số lượng cảnh báo trong các ngày */}
+        <Col xs={24} sm={8}>
+          <Card
+            style={{
+              borderRadius: 12,
+              background: '#FFFBEB',
+              border: '1px solid #FDE68A',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
+            }}
+            bodyStyle={{ padding: '14px 16px' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <Text style={{ fontSize: 12, color: '#92400E', fontWeight: 600 }}>
+                  CẢNH BÁO THEO NGÀY
+                </Text>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#B45309', marginTop: 6 }}>
+                  {alertStats.daily && alertStats.daily.length > 0 ? (
+                    <div>
+                      Hôm nay: <strong style={{ fontSize: 16, color: '#D97706' }}>{alertStats.daily[0]?.count || 0}</strong> lượt{' '}
+                      <span style={{ fontSize: 11, color: '#78350F' }}>({alertStats.daily[0]?.date})</span>
+                    </div>
+                  ) : (
+                    <span>Chưa có lượt cảnh báo hôm nay</span>
+                  )}
+                </div>
+              </div>
+              <div
+                style={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: 10,
+                  background: '#FEF3C7',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <CalendarOutlined style={{ fontSize: 20, color: '#D97706' }} />
+              </div>
+            </div>
+            <div style={{ marginTop: 8, fontSize: 11, color: '#92400E' }}>
+              Tổng {alertStats.daily?.length || 0} ngày ghi nhận cảnh báo
+            </div>
+          </Card>
+        </Col>
+
+        {/* Thẻ 3: Thống kê số lượng cảnh báo trong các tháng */}
+        <Col xs={24} sm={8}>
+          <Card
+            style={{
+              borderRadius: 12,
+              background: '#F0FDF4',
+              border: '1px solid #BBF7D0',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
+            }}
+            bodyStyle={{ padding: '14px 16px' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <Text style={{ fontSize: 12, color: '#166534', fontWeight: 600 }}>
+                  CẢNH BÁO THEO THÁNG
+                </Text>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#15803D', marginTop: 6 }}>
+                  {alertStats.monthly && alertStats.monthly.length > 0 ? (
+                    <div>
+                      Tháng này: <strong style={{ fontSize: 16, color: '#16A34A' }}>{alertStats.monthly[0]?.count || 0}</strong> lượt{' '}
+                      <span style={{ fontSize: 11, color: '#14532D' }}>({alertStats.monthly[0]?.month})</span>
+                    </div>
+                  ) : (
+                    <span>Chưa có cảnh báo tháng này</span>
+                  )}
+                </div>
+              </div>
+              <div
+                style={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: 10,
+                  background: '#DCFCE7',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <BarChartOutlined style={{ fontSize: 20, color: '#16A34A' }} />
+              </div>
+            </div>
+            <div style={{ marginTop: 8, fontSize: 11, color: '#166534' }}>
+              Tổng {alertStats.monthly?.length || 0} tháng có bản ghi cảnh báo
+            </div>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* 3. THANH LỌC THỜI GIAN LINH HOẠT */}
       <VariableTimeRangeFilter
         onFilter={handleFilter}
         onReset={handleReset}
         loading={loading}
       />
 
-      {/* 3. CARD BẢNG LỊCH SỬ THAO TÁC */}
+      {/* 4. CARD BẢNG LỊCH SỬ THAO TÁC */}
       <Card
         style={{
           borderRadius: 12,
@@ -255,7 +477,7 @@ export default function ActionHistoryPage() {
           }}
         >
           <Space size="middle" wrap align="center">
-            {/* 1. Lọc Loại thiết bị */}
+            {/* 1. Lọc Loại thiết bị (Bổ sung Đèn Cảnh Báo ALERT_LED) */}
             <Space size="small">
               <Text strong style={{ fontSize: 13, color: '#374151' }}>
                 Loại thiết bị:
@@ -266,18 +488,19 @@ export default function ActionHistoryPage() {
                   setDeviceType(val);
                   setPagination((prev) => ({ ...prev, current: 1 }));
                 }}
-                style={{ width: 175 }}
+                style={{ width: 195 }}
                 popupMatchSelectWidth={false}
-                dropdownStyle={{ minWidth: 175 }}
+                dropdownStyle={{ minWidth: 195 }}
                 size="middle"
               >
                 <Option value="ALL">Tất cả</Option>
                 <Option value="LAMP">Đèn</Option>
                 <Option value="FAN">Quạt</Option>
+                <Option value="ALERT_LED">🚨 Đèn Cảnh Báo (Đề 1)</Option>
               </Select>
             </Space>
 
-            {/* 2. Lọc Hành động (BẬT / TẮT) */}
+            {/* 2. Lọc Hành động (BẬT / TẮT / CẢNH BÁO) */}
             <Space size="small">
               <Text strong style={{ fontSize: 13, color: '#374151' }}>
                 Hành động:
@@ -288,12 +511,13 @@ export default function ActionHistoryPage() {
                   setActionFilter(val);
                   setPagination((prev) => ({ ...prev, current: 1 }));
                 }}
-                style={{ width: 130 }}
+                style={{ width: 140 }}
                 size="middle"
               >
                 <Option value="ALL">Tất cả</Option>
                 <Option value="ON">BẬT</Option>
                 <Option value="OFF">TẮT</Option>
+                <Option value="ALERT">CẢNH BÁO</Option>
               </Select>
             </Space>
 
@@ -360,6 +584,133 @@ export default function ActionHistoryPage() {
           size="middle"
         />
       </Card>
+
+      {/* 5. ĐỀ 1: MODAL CHI TIẾT THỐNG KÊ CẢNH BÁO THEO NGÀY VÀ THÁNG */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <AlertFilled style={{ color: '#DC2626', fontSize: 18 }} />
+            <span>Thống Kê Số Lượng Cảnh Báo Ánh Sáng (Đề 1)</span>
+          </div>
+        }
+        open={statsModalOpen}
+        onCancel={() => setStatsModalOpen(false)}
+        footer={[
+          <Button key="close" type="primary" onClick={() => setStatsModalOpen(false)}>
+            Đóng
+          </Button>,
+        ]}
+        width={720}
+      >
+        <div style={{ marginBottom: 16 }}>
+          <Text type="secondary" style={{ fontSize: 13 }}>
+            Hệ thống tự động gom nhóm lịch sử cảnh báo khi cường độ ánh sáng vượt ngưỡng{' '}
+            <strong>{alertStats.currentThreshold || 600} Lux</strong>.
+          </Text>
+        </div>
+
+        <Tabs
+          defaultActiveKey="daily"
+          items={[
+            {
+              key: 'daily',
+              label: (
+                <span>
+                  <CalendarOutlined /> Theo Ngày ({alertStats.daily?.length || 0})
+                </span>
+              ),
+              children: (
+                <Table
+                  size="small"
+                  rowKey="date"
+                  dataSource={alertStats.daily || []}
+                  pagination={false}
+                  columns={[
+                    {
+                      title: 'STT',
+                      key: 'stt',
+                      width: 60,
+                      align: 'center',
+                      render: (_, __, idx) => idx + 1,
+                    },
+                    {
+                      title: 'Ngày',
+                      dataIndex: 'date',
+                      key: 'date',
+                      render: (d) => <strong>{dayjs(d).format('DD/MM/YYYY')}</strong>,
+                    },
+                    {
+                      title: 'Số lần cảnh báo',
+                      dataIndex: 'count',
+                      key: 'count',
+                      align: 'center',
+                      render: (count) => (
+                        <Tag color="error" style={{ fontWeight: 700, padding: '2px 10px' }}>
+                          {count} lần
+                        </Tag>
+                      ),
+                    },
+                    {
+                      title: 'Lần cảnh báo gần nhất',
+                      dataIndex: 'latestTime',
+                      key: 'latestTime',
+                      render: (t) => (t ? dayjs(t).format('DD/MM/YYYY HH:mm:ss') : '--'),
+                    },
+                  ]}
+                />
+              ),
+            },
+            {
+              key: 'monthly',
+              label: (
+                <span>
+                  <BarChartOutlined /> Theo Tháng ({alertStats.monthly?.length || 0})
+                </span>
+              ),
+              children: (
+                <Table
+                  size="small"
+                  rowKey="month"
+                  dataSource={alertStats.monthly || []}
+                  pagination={false}
+                  columns={[
+                    {
+                      title: 'STT',
+                      key: 'stt',
+                      width: 60,
+                      align: 'center',
+                      render: (_, __, idx) => idx + 1,
+                    },
+                    {
+                      title: 'Tháng',
+                      dataIndex: 'month',
+                      key: 'month',
+                      render: (m) => <strong>Tháng {dayjs(m).format('MM/YYYY')}</strong>,
+                    },
+                    {
+                      title: 'Tổng số lần cảnh báo',
+                      dataIndex: 'count',
+                      key: 'count',
+                      align: 'center',
+                      render: (count) => (
+                        <Tag color="volcano" style={{ fontWeight: 700, padding: '2px 10px' }}>
+                          {count} lần
+                        </Tag>
+                      ),
+                    },
+                    {
+                      title: 'Lần cảnh báo gần nhất',
+                      dataIndex: 'latestTime',
+                      key: 'latestTime',
+                      render: (t) => (t ? dayjs(t).format('DD/MM/YYYY HH:mm:ss') : '--'),
+                    },
+                  ]}
+                />
+              ),
+            },
+          ]}
+        />
+      </Modal>
     </div>
   );
 }
