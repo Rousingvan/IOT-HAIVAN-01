@@ -106,6 +106,11 @@ export const startMQTTService = (io) => {
 };
 
 export const sendDeviceCommand = async (deviceCode, deviceName, action) => {
+  // ĐỀ 1: Đèn 3 (LAMP_03 / P201_LAMP_03) đã được chuyển làm Đèn Cảnh Báo Ánh Sáng tự động
+  if (deviceCode === 'LAMP_03' || deviceCode === 'P201_LAMP_03' || deviceCode === 'ALERT_LED') {
+    throw new Error('Đèn 3 (chân GPIO 21) đang đóng vai trò Đèn Cảnh Báo Ánh Sáng tự động theo ngưỡng X, không điều khiển thủ công.');
+  }
+
   if (!mqttClient || !mqttClient.connected) {
     throw new Error('MQTT Broker chưa kết nối. Không thể gửi lệnh tới phần cứng.');
   }
