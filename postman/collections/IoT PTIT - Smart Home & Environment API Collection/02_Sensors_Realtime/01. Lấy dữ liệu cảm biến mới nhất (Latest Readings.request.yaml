@@ -1,0 +1,5 @@
+$kind: http-request
+name: 01. Lấy dữ liệu cảm biến mới nhất (Latest Readings)
+url: "{{baseUrl}}/sensors/latest"
+method: GET
+order: 1000

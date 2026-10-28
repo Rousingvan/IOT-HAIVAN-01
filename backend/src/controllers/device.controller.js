@@ -19,7 +19,15 @@ export const toggleDevice = async (req, res) => {
   }
 
   try {
-    const device = await Device.findOne({ device_code: deviceCode });
+    // Tìm kiếm linh hoạt: khớp chính xác, hoặc có tiền tố P201_, hoặc khớp đuôi (không phân biệt hoa/thường)
+    const device = await Device.findOne({
+      $or: [
+        { device_code: deviceCode },
+        { device_code: `P201_${deviceCode}` },
+        { device_code: { $regex: new RegExp(`${deviceCode}$`, 'i') } },
+      ],
+    });
+
     if (!device) {
       return res.status(404).json({ message: `Không tìm thấy thiết bị có mã ${deviceCode}` });
     }
@@ -31,8 +39,11 @@ export const toggleDevice = async (req, res) => {
       });
     }
 
+    // Chuẩn hóa mã gửi xuống MQTT: Firmware ESP32 so khớp với "LAMP_01", "LAMP_02"
+    const hardwareCode = device.device_code.replace(/^P\d+_/, '');
+
     // Gửi lệnh qua MQTT và chờ phản hồi ACK trong 5 giây
-    const result = await sendDeviceCommand(device.device_code, device.device_name, action);
+    const result = await sendDeviceCommand(hardwareCode, device.device_name, action);
     return res.json(result);
   } catch (err) {
     return res.status(500).json({ message: err.message });

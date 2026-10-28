@@ -1,11 +1,17 @@
 import mqtt from 'mqtt';
 
-const BROKER_URL = process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883';
+const BROKER_URL = process.env.MQTT_BROKER_URL || 'mqtt://localhost:18883';
 const COMMAND_TOPIC = 'esp32/device/command';
 const ACK_TOPIC = 'esp32/device/ack';
+const USERNAME = process.env.MQTT_USERNAME || 'esp32_device';
+const PASSWORD = process.env.MQTT_PASSWORD || 'ptit2026';
 
 console.log(`🚀 Khởi động Trình Giả Lập ESP32 ACK Responder tới: ${BROKER_URL}...`);
-const client = mqtt.connect(BROKER_URL, { clientId: 'mock_esp32_ack_responder' });
+const client = mqtt.connect(BROKER_URL, {
+  clientId: 'mock_esp32_ack_responder',
+  username: USERNAME,
+  password: PASSWORD,
+});
 
 // Trạng thái thiết bị giả lập trong bộ nhớ ESP32
 const mockHardwareState = {

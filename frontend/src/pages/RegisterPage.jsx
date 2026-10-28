@@ -14,11 +14,29 @@ import { apiService } from '../services/api';
 
 const { Title, Text } = Typography;
 
+/**
+ * ==============================================================================
+ * TRANG: RegisterPage (Đăng Ký Tài Khoản Sinh Viên)
+ * CHỨC NĂNG CHÍNH:
+ * - Đăng ký tài khoản mới cho sinh viên: Họ tên, Mã SV, Lớp, Username, Password.
+ * - Form Validation mạnh mẽ của Ant Design:
+ *     + Bắt buộc nhập đầy đủ các trường (required).
+ *     + Độ dài tối thiểu Username (3 ký tự), Password (6 ký tự).
+ *     + Khớp mật khẩu xác nhận (Custom validator so sánh password và confirmPassword).
+ * - Tự động đăng nhập và chuyển hướng vào Dashboard (`/dashboard`) sau khi đăng ký thành công.
+ * 
+ * GỢI Ý CÁC TÙY CHỈNH THẦY CÔ CÓ THỂ YÊU CẦU:
+ * 1. Thêm trường Email / Số điện thoại vào form.
+ * 2. Thay đổi độ dài mật khẩu tối thiểu: sửa min: 6 thành min: 8.
+ * 3. Chuyển về trang Đăng nhập sau khi tạo tài khoản thay vì tự động vào Dashboard.
+ * ==============================================================================
+ */
 export default function RegisterPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
 
+  // Handler khi submit form đăng ký thành công và hợp lệ
   const onFinish = async (values) => {
     setLoading(true);
     try {
@@ -30,7 +48,7 @@ export default function RegisterPage() {
         className: values.className,
       });
       message.success('Đăng ký tài khoản thành công! Đang chuyển hướng vào hệ thống...');
-      navigate('/dashboard');
+      navigate('/dashboard'); // Chuyển thẳng vào trang Dashboard
     } catch (err) {
       message.error(err.message || 'Đăng ký thất bại!');
     } finally {
@@ -52,7 +70,7 @@ export default function RegisterPage() {
       <Card
         style={{
           width: '100%',
-          maxWidth: 480,
+          maxWidth: 480, // Chiều rộng tối đa 480px
           borderRadius: 12,
           boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
           border: '1px solid #EAECF0',
@@ -60,7 +78,7 @@ export default function RegisterPage() {
         }}
         bodyStyle={{ padding: '32px 28px' }}
       >
-        {/* Header */}
+        {/* PHẦN 1: HEADER TRANG ĐĂNG KÝ */}
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
           <div
             style={{
@@ -86,7 +104,7 @@ export default function RegisterPage() {
           </Text>
         </div>
 
-        {/* Form Đăng ký */}
+        {/* PHẦN 2: FORM ĐĂNG KÝ THÔNG TIN */}
         <Form
           form={form}
           name="register_form"
@@ -94,6 +112,7 @@ export default function RegisterPage() {
           onFinish={onFinish}
           autoComplete="off"
         >
+          {/* Ô nhập Họ và tên */}
           <Form.Item
             label="Họ và tên sinh viên"
             name="fullName"
@@ -106,6 +125,7 @@ export default function RegisterPage() {
             />
           </Form.Item>
 
+          {/* Hàng 2 cột: Mã sinh viên + Lớp */}
           <Row gutter={12}>
             <Col xs={24} sm={12}>
               <Form.Item
@@ -135,6 +155,7 @@ export default function RegisterPage() {
             </Col>
           </Row>
 
+          {/* Ô nhập Tên đăng nhập */}
           <Form.Item
             label="Tên đăng nhập"
             name="username"
@@ -150,6 +171,7 @@ export default function RegisterPage() {
             />
           </Form.Item>
 
+          {/* Hàng 2 cột: Mật khẩu + Xác nhận mật khẩu */}
           <Row gutter={12}>
             <Col xs={24} sm={12}>
               <Form.Item
@@ -171,10 +193,11 @@ export default function RegisterPage() {
               <Form.Item
                 label="Xác nhận mật khẩu"
                 name="confirmPassword"
-                dependencies={['password']}
+                dependencies={['password']} // Lắng nghe trường 'password' để đối chiếu
                 rules={[
                   { required: true, message: 'Vui lòng xác nhận mật khẩu!' },
                   ({ getFieldValue }) => ({
+                    // Validator kiểm tra 2 mật khẩu có khớp nhau không
                     validator(_, value) {
                       if (!value || getFieldValue('password') === value) {
                         return Promise.resolve();
@@ -193,6 +216,7 @@ export default function RegisterPage() {
             </Col>
           </Row>
 
+          {/* Nút Đăng ký tài khoản */}
           <Form.Item style={{ marginTop: 12, marginBottom: 16 }}>
             <Button
               type="primary"
@@ -213,7 +237,7 @@ export default function RegisterPage() {
           </Form.Item>
         </Form>
 
-        {/* Chuyển sang trang Đăng nhập */}
+        {/* PHẦN 3: FOOTER CHUYỂN SANG ĐĂNG NHẬP */}
         <div style={{ textAlign: 'center', marginTop: 16, paddingTop: 16, borderTop: '1px solid #F3F4F6' }}>
           <Text style={{ fontSize: 13, color: '#6B7280' }}>
             Đã có tài khoản?{' '}

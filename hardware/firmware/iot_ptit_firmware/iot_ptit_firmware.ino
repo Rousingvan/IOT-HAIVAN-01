@@ -22,16 +22,20 @@ WiFiClient espClient;
 PubSubClient mqttClient(espClient);
 
 unsigned long lastTelemetryTime = 0;
-const unsigned long TELEMETRY_INTERVAL = 3000; // Chu kỳ gửi dữ liệu cảm biến: 3 giây
+const unsigned long TELEMETRY_INTERVAL = 2000; // Chu kỳ gửi dữ liệu cảm biến: 2 giây
 
 // =========================================================================
 // HÀM KẾT NỐI WIFI
 // =========================================================================
 void setupWiFi() {
-  delay(10);
+  delay(100);
   Serial.println();
   Serial.print("📡 Đang kết nối tới WiFi: ");
   Serial.println(WIFI_SSID);
+
+  // Xóa kết nối dở dang để tránh lỗi "wifi:sta is connecting, cannot set config"
+  WiFi.disconnect(true);
+  delay(500);
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
@@ -50,7 +54,9 @@ void setupWiFi() {
     Serial.println(WiFi.localIP());
     digitalWrite(PIN_LED_STATUS, HIGH); // Sáng LED báo thành công
   } else {
-    Serial.println("\n⚠️ Không thể kết nối WiFi. Hãy kiểm tra lại SSID/Password.");
+    Serial.println("\n⚠️ Không thể kết nối WiFi. Hãy kiểm tra lại SSID/Password/2.4GHz.");
+    WiFi.disconnect(true);
+    delay(1000);
   }
 }
 
@@ -123,9 +129,9 @@ void reconnectMQTT() {
     Serial.print(MQTT_SERVER);
     Serial.print(")...");
 
-    // Last Will and Testament (LWT) để thông báo khi ESP32 mất nguồn
-    if (mqttClient.connect(MQTT_CLIENT_ID, TOPIC_STATUS, 1, true, "{\"status\":\"OFFLINE\"}")) {
-      Serial.println(" ✅ Đã kết nối MQTT Broker!");
+    // Last Will and Testament (LWT) kèm xác thực Username/Password
+    if (mqttClient.connect(MQTT_CLIENT_ID, MQTT_USER, MQTT_PASS, TOPIC_STATUS, 1, true, "{\"status\":\"OFFLINE\"}")) {
+      Serial.println(" ✅ Đã kết nối MQTT Broker (Authenticated)!");
 
       // Báo trạng thái Online
       mqttClient.publish(TOPIC_STATUS, "{\"status\":\"ONLINE\"}", true);

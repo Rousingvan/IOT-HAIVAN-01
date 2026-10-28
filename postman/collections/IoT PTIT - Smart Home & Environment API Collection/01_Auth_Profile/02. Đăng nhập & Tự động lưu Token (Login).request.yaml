@@ -1,0 +1,22 @@
+$kind: http-request
+url: "{{baseUrl}}/auth/login"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "username": "admin",
+      "password": "admin123"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      const res = pm.response.json();
+      if (res.token) {
+          pm.collectionVariables.set('token', res.token);
+          console.log('✅ Đã tự động lưu JWT Access Token:', res.token);
+      }
+    language: text/javascript
+order: 2000

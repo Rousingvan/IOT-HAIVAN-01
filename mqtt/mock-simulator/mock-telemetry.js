@@ -1,10 +1,16 @@
 import mqtt from 'mqtt';
 
-const BROKER_URL = process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883';
+const BROKER_URL = process.env.MQTT_BROKER_URL || 'mqtt://localhost:18883';
 const TELEMETRY_TOPIC = 'esp32/telemetry';
+const USERNAME = process.env.MQTT_USERNAME || 'esp32_device';
+const PASSWORD = process.env.MQTT_PASSWORD || 'ptit2026';
 
 console.log(`🚀 Khởi động Trình Giả Lập ESP32 Telemetry tới: ${BROKER_URL}...`);
-const client = mqtt.connect(BROKER_URL, { clientId: 'mock_esp32_telemetry_generator' });
+const client = mqtt.connect(BROKER_URL, {
+  clientId: 'mock_esp32_telemetry_generator',
+  username: USERNAME,
+  password: PASSWORD,
+});
 
 client.on('connect', () => {
   console.log(`✅ Mock ESP32 đã kết nối Broker! Bắt đầu phát dữ liệu cảm biến mỗi 3 giây...`);

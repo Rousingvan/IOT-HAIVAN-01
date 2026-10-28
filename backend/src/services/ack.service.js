@@ -53,14 +53,23 @@ export const ackService = {
 
     // 1. Cập nhật trạng thái thiết bị trong DB
     try {
-      await Device.findOneAndUpdate(
-        { device_code: deviceCode },
-        { current_state: currentState || commandInfo.action }
+      const updatedDevice = await Device.findOneAndUpdate(
+        {
+          $or: [
+            { device_code: deviceCode },
+            { device_code: `P201_${deviceCode}` },
+            { device_code: { $regex: new RegExp(`${deviceCode}$`, 'i') } },
+          ],
+        },
+        { current_state: currentState || commandInfo.action },
+        { new: true }
       );
+
+      const savedCode = updatedDevice ? updatedDevice.device_code : deviceCode;
 
       // 2. Lưu lịch sử ActionHistory thành công
       await ActionHistory.create({
-        device_code: deviceCode,
+        device_code: savedCode,
         device_name: commandInfo.deviceName,
         action: commandInfo.action,
         command_time: cmdTime,
@@ -68,16 +77,13 @@ export const ackService = {
         latency_ms: latency,
         status: status === 'SUCCESS' ? 'SUCCESS' : 'FAILED',
       });
+
+      // 3. Bắn WebSocket báo cho Frontend cập nhật UI
+      if (io && updatedDevice) {
+        io.emit('device_state_changed', updatedDevice);
+      }
     } catch (err) {
       console.warn('Lỗi cập nhật DB khi nhận ACK:', err.message);
-    }
-
-    // 3. Bắn WebSocket báo cho Frontend cập nhật UI
-    if (io) {
-      io.emit('device_state_changed', {
-        device_code: deviceCode,
-        current_state: currentState || commandInfo.action,
-      });
     }
 
     resolve({

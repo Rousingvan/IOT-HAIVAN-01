@@ -1,0 +1,5 @@
+$kind: collection
+description: Bộ API Collection hoàn chỉnh cho Đồ án IoT PTIT (B23DCAT332 - Lương Hải Vân). Hỗ trợ kiểm thử trực tiếp 9 endpoint và điều khiển bật/tắt thiết bị qua Postman.
+variables:
+  baseUrl: http://localhost:5000/api
+  token: ""

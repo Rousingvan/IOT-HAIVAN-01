@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "author": "PTIT IoT Student",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "wokwi-esp32-devkit-v1", "id": "esp", "top": 0, "left": 0, "attrs": {} },
+    { "type": "wokwi-dht22", "id": "dht1", "top": -120, "left": 180, "attrs": {} },
+    { "type": "wokwi-photoresistor-sensor", "id": "ldr1", "top": 120, "left": 180, "attrs": {} },
+    { "type": "wokwi-led", "id": "led1", "top": -60, "left": -180, "attrs": { "color": "red" } },
+    { "type": "wokwi-led", "id": "led2", "top": 60, "left": -180, "attrs": { "color": "blue" } },
+    { "type": "wokwi-resistor", "id": "r1", "top": -30, "left": -120, "attrs": { "value": "220" } },
+    { "type": "wokwi-resistor", "id": "r2", "top": 90, "left": -120, "attrs": { "value": "220" } }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+
+    [ "esp:3V3", "dht1:VCC", "red", [ "v0" ] ],
+    [ "esp:GND", "dht1:GND", "black", [ "v0" ] ],
+    [ "esp:D4", "dht1:SDA", "green", [ "v0" ] ],
+
+    [ "esp:3V3", "ldr1:VCC", "red", [ "v0" ] ],
+    [ "esp:GND", "ldr1:GND", "black", [ "v0" ] ],
+    [ "esp:VP", "ldr1:AO", "orange", [ "v0" ] ],
+
+    [ "esp:D26", "r1:1", "red", [ "v0" ] ],
+    [ "r1:2", "led1:A", "red", [ "v0" ] ],
+    [ "esp:GND", "led1:C", "black", [ "v0" ] ],
+
+    [ "esp:D27", "r2:1", "blue", [ "v0" ] ],
+    [ "r2:2", "led2:A", "blue", [ "v0" ] ],
+    [ "esp:GND", "led2:C", "black", [ "v0" ] ]
+  ]
+}

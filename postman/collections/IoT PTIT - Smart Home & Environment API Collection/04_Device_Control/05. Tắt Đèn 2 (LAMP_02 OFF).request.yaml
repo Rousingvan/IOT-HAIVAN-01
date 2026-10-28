@@ -1,0 +1,12 @@
+$kind: http-request
+url: "{{baseUrl}}/devices/P201_LAMP_02/toggle"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "action": "OFF"
+    }
+order: 5000

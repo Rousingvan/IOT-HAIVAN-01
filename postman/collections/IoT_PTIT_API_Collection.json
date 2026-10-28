@@ -1,0 +1,338 @@
+{
+  "info": {
+    "_postman_id": "iot-ptit-b23dcat332-collection",
+    "name": "IoT PTIT - Smart Home & Environment API Collection",
+    "description": "Bộ API Collection hoàn chỉnh cho Đồ án IoT PTIT (B23DCAT332 - Lương Hải Vân). Hỗ trợ kiểm thử trực tiếp 9 endpoint và điều khiển bật/tắt thiết bị qua Postman.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01_Auth_Profile",
+      "item": [
+        {
+          "name": "01. Đăng ký tài khoản (Register)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"student_ptit\",\n  \"password\": \"123456\",\n  \"fullName\": \"Lương Hải Vân\",\n  \"studentCode\": \"B23DCAT332\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "02. Đăng nhập & Tự động lưu Token (Login)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.token) {",
+                  "    pm.collectionVariables.set('token', res.token);",
+                  "    console.log('✅ Đã tự động lưu JWT Access Token:', res.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "03. Xem thông tin cá nhân & 4 Links đồ án (Profile)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["profile"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02_Sensors_Realtime",
+      "item": [
+        {
+          "name": "01. Lấy dữ liệu cảm biến mới nhất (Latest Readings)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/sensors/latest",
+              "host": ["{{baseUrl}}"],
+              "path": ["sensors", "latest"]
+            }
+          }
+        },
+        {
+          "name": "02. Lấy chuỗi lịch sử đo vẽ biểu đồ (Chart History)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/sensors/history?limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["sensors", "history"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03_Sensor_Data_Search",
+      "item": [
+        {
+          "name": "01. Tra cứu & Phân trang dữ liệu cảm biến",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/sensor-data?page=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["sensor-data"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "02. Lọc dữ liệu theo mốc thời gian (Search Time)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/sensor-data?searchTime=2026-10-24&page=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["sensor-data"],
+              "query": [
+                {
+                  "key": "searchTime",
+                  "value": "2026-10-24"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04_Device_Control",
+      "item": [
+        {
+          "name": "01. Lấy danh sách thiết bị & Trạng thái (Device List)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/devices",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices"]
+            }
+          }
+        },
+        {
+          "name": "02. Bật Đèn 1 (LAMP_01 ON)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"ON\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/devices/P201_LAMP_01/toggle",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "P201_LAMP_01", "toggle"]
+            }
+          }
+        },
+        {
+          "name": "03. Tắt Đèn 1 (LAMP_01 OFF)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"OFF\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/devices/P201_LAMP_01/toggle",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "P201_LAMP_01", "toggle"]
+            }
+          }
+        },
+        {
+          "name": "04. Bật Đèn 2 (LAMP_02 ON)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"ON\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/devices/P201_LAMP_02/toggle",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "P201_LAMP_02", "toggle"]
+            }
+          }
+        },
+        {
+          "name": "05. Tắt Đèn 2 (LAMP_02 OFF)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"OFF\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/devices/P201_LAMP_02/toggle",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "P201_LAMP_02", "toggle"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05_Action_History",
+      "item": [
+        {
+          "name": "01. Tra cứu Lịch sử Điều khiển Thiết bị (Phân trang)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/action-history?page=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["action-history"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "02. Lọc Lịch sử theo Đèn 1 (Filter by LAMP_01)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/action-history?deviceCode=LAMP_01&page=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["action-history"],
+              "query": [
+                {
+                  "key": "deviceCode",
+                  "value": "LAMP_01"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

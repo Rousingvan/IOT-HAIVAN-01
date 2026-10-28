@@ -1,0 +1,7 @@
+$kind: http-request
+name: 02. Lấy chuỗi lịch sử đo vẽ biểu đồ (Chart History)
+url: "{{baseUrl}}/sensors/history?limit=20"
+method: GET
+queryParams:
+  limit: "20"
+order: 2000

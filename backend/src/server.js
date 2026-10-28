@@ -1,13 +1,13 @@
+import 'dotenv/config';
 import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
-import dotenv from 'dotenv';
+import swaggerUi from 'swagger-ui-express';
 import { connectDatabase } from './config/database.js';
 import { startMQTTService } from './services/mqtt.service.js';
 import apiRoutes from './routes/api.routes.js';
-
-dotenv.config();
+import { swaggerSpec } from './config/swagger.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -26,6 +26,15 @@ app.use(express.json());
 
 // Routes
 app.use('/api', apiRoutes);
+
+// Swagger UI Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// Postman OpenAPI JSON Endpoint (Dành cho Postman Desktop Import)
+app.get('/api-docs-json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.json(swaggerSpec);
+});
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -56,6 +65,8 @@ const startServer = async () => {
     console.log(`🚀 IoT PTIT Backend Server đang chạy tại: http://localhost:${PORT}`);
     console.log(`📡 WebSocket Socket.io sẵn sàng lắng nghe realtime.`);
     console.log(`🔗 API Base URL: http://localhost:${PORT}/api`);
+    console.log(`📄 Swagger UI Docs: http://localhost:${PORT}/api-docs`);
+    console.log(`📦 Postman OpenAPI Spec: http://localhost:${PORT}/api-docs-json`);
   });
 };
 

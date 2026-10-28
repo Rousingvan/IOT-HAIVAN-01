@@ -55,9 +55,9 @@ skinparam sequenceMessageAlign center
 title UC01.2: Đăng Ký Tài Khoản Sinh Viên (User Registration)
 
 actor "User" as User
-participant "Frontend (React)" as FE
-participant "Backend (Express)" as BE
-database "Database (MongoDB)" as DB
+participant "Frontend" as FE
+participant "Backend" as BE
+database "Database" as DB
 
 User -> FE: 1. Nhập username, password, fullName, studentCode, className
 activate FE
@@ -100,9 +100,9 @@ skinparam sequenceMessageAlign center
 title UC01.3: Xem Hồ Sơ Sinh Viên & Liên Kết Tài Nguyên Đồ Án
 
 actor "User" as User
-participant "Frontend (React)" as FE
-participant "Backend (Express)" as BE
-database "Database (MongoDB)" as DB
+participant "Frontend" as FE
+participant "Backend" as BE
+database "Database" as DB
 
 User -> FE: 1. Truy cập màn hình Hồ sơ cá nhân (/profile)
 activate FE
@@ -341,9 +341,9 @@ activate DB
 DB --> BE: 6. Trả về danh sách bản ghi lịch sử điều khiển
 deactivate DB
 
-BE -> DB: 7. db.action_histories.countDocuments(query)
+BE -> DB: 7. db.action_histories.countDocuments
 activate DB
-DB --> BE: 8. Trả về tổng số lượng bản ghi (total)
+DB --> BE: 8. Trả về tổng số lượng bản ghi
 deactivate DB
 
 BE --> FE: 9. HTTP 200 OK { data: [...], total, page: 1, pageSize: 10 }

@@ -7,10 +7,10 @@ export const getProfile = async (req, res) => {
     instructor: 'TS. Nguyễn Quốc Uy',
     academicYear: '2026-2027',
     links: {
-      github: 'https://github.com/ptit-iot/smart-home-2026',
-      figma: 'https://figma.com/@ptit_iot_design',
+      github: 'https://github.com/Rousingvan/IOT-HAIVAN-01',
+      figma: 'https://www.figma.com/design/L0E1y6JcOK4M4DQPgc4jud/IoT-B23DCAT332?node-id=0-1&t=8RONHZNqQErP8w67-1',
       swagger: 'http://localhost:5000/api-docs',
-      pdfReport: '/docs/bao_cao_btl_iot.pdf',
+      pdfReport: 'IoT_B23DCAT332_Bao_cao_tot_nghiep.pdf',
     },
   });
 };

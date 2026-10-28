@@ -1,0 +1,13 @@
+# Use this workspace to collaborate
+workspace:
+  id: 790313b4-d295-4438-8dfd-397eb4cbd88b
+
+cloudResources:
+  collections:
+    ../postman/collections/IoT PTIT - Smart Home & Environment API Collection: 70e41378-5dcd-4ca3-abd0-c7a287574e35
+
+# All resources in the `postman/` folder are automatically registered in Local View.
+# Point to additional files outside the `postman/` folder to register them individually. Example:
+#localResources:
+#  collections:
+#    - ../tests/E2E Test Collection/

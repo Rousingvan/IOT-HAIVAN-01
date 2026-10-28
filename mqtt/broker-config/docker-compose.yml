@@ -6,7 +6,8 @@ services:
     container_name: iot_ptit_mosquitto
     restart: always
     ports:
-      - "1883:1883"      # MQTT Port tiêu chuẩn
+      - "18883:18883"    # MQTT Port tùy biến (Bảo mật & Tránh xung đột)
       - "9001:9001"      # WebSocket Port cho MQTT over WebSockets
     volumes:
       - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ./passwords.txt:/mosquitto/config/passwords.txt

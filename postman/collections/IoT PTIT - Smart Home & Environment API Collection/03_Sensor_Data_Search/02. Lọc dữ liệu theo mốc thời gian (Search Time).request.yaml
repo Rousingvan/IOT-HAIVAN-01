@@ -1,0 +1,8 @@
+$kind: http-request
+url: "{{baseUrl}}/sensor-data?searchTime=2026-10-24&page=1&pageSize=10"
+method: GET
+queryParams:
+  searchTime: 2026-10-24
+  page: "1"
+  pageSize: "10"
+order: 2000

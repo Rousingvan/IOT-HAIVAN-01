@@ -1,0 +1,15 @@
+$kind: http-request
+url: "{{baseUrl}}/auth/register"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "username": "student_ptit",
+      "password": "123456",
+      "fullName": "Lương Hải Vân",
+      "studentCode": "B23DCAT332"
+    }
+order: 1000

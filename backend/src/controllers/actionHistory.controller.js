@@ -2,11 +2,26 @@ import { ActionHistory } from '../models/ActionHistory.model.js';
 import { buildTimeStringQuery, buildTimeRangeQuery } from '../utils/timeRangeHelper.js';
 
 export const queryActionHistory = async (req, res) => {
-  const { deviceCode, searchTime, startTime, endTime, granularity, page = 1, pageSize = 10 } = req.query;
+  const { deviceCode, deviceType, action, status, userId, user, searchTime, startTime, endTime, granularity, page = 1, pageSize = 10 } = req.query;
 
   let query = {};
-  if (deviceCode && deviceCode !== 'ALL') {
+  if (deviceType && deviceType !== 'ALL') {
+    query.device_code = { $regex: deviceType, $options: 'i' };
+  } else if (deviceCode && deviceCode !== 'ALL') {
     query.device_code = deviceCode;
+  }
+
+  if (action && action !== 'ALL') {
+    query.action = action;
+  }
+
+  if (status && status !== 'ALL') {
+    query.status = status;
+  }
+
+  const u = userId || user;
+  if (u && u !== 'ALL') {
+    query.user_id = u;
   }
 
   if (searchTime) {
@@ -43,6 +58,7 @@ export const queryActionHistory = async (req, res) => {
         response_time: d.response_time,
         latency_ms: d.latency_ms,
         status: d.status,
+        user_id: d.user_id || 'admin',
       })),
       total,
       page: p,

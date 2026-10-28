@@ -1,0 +1,8 @@
+$kind: http-request
+url: "{{baseUrl}}/action-history?deviceCode=LAMP_01&page=1&pageSize=10"
+method: GET
+queryParams:
+  deviceCode: LAMP_01
+  page: "1"
+  pageSize: "10"
+order: 2000

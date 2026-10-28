@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Card, Typography, Switch, Tag, Tooltip, Space, Button, Modal, Segmented, notification, Descriptions } from 'antd';
+import { Card, Typography, Switch, Tag, Tooltip, Space, Button, Modal, notification, Descriptions } from 'antd';
 import {
   BulbOutlined,
   BulbFilled,
@@ -14,55 +14,73 @@ import { useNavigate } from 'react-router-dom';
 
 const { Title, Text } = Typography;
 
+/**
+ * ==============================================================================
+ * COMPONENT: DevicePanel
+ * CHỨC NĂNG:
+ * - Bảng điều khiển và giám sát trạng thái thiết bị thời gian thực (Đèn, Quạt...).
+ * - Kiểm tra phân quyền RBAC (Chỉ tài khoản ADMIN mới được gạt công tắc bật/tắt).
+ * - Hiển thị trực tiếp danh sách tất cả các thiết bị trong hệ thống.
+ * - Hoạt ảnh trực quan: Quạt xoay 360 độ liên tục khi BẬT (spin={true}).
+ * - Chống Spam click: Vòng quay loading trên từng nút switch trong lúc chờ xác nhận từ ESP32.
+ * - 2 Hộp thoại Modal: Modal xem vị trí phòng/chân GPIO và Modal báo thành công.
+ * 
+ * PROPS:
+ * @param {Array} devices - Danh sách thiết bị lấy từ Backend
+ * @param {Function} onToggleDevice - Callback gọi API bật/tắt (deviceCode, action)
+ * @param {Object} loadingMap - Object lưu cờ loading của từng thiết bị { LED1: true }
+ * 
+ * GỢI Ý CÁC TÙY CHỈNH THẦY CÔ CÓ THỂ YÊU CẦU:
+ * 1. Đổi màu nút Switch khi BẬT: sửa style={{ backgroundColor: isOn ? '#Màu_Mới' : undefined }}.
+ * 2. Đổi tab mặc định: sửa useState('ACTIVE') thành useState('ALL').
+ * 3. Tắt popup Modal báo thành công sau mỗi lần gạt switch.
+ * 4. Thêm loại thiết bị mới (Điều hòa, Máy bơm): thêm case vào filteredDevices và renderDeviceIcon.
+ * ==============================================================================
+ */
 export default function DevicePanel({ devices = [], onToggleDevice, loadingMap = {} }) {
   const navigate = useNavigate();
 
-  // Kiểm tra quyền hạn người dùng hiện tại
+  // 1. Kiểm tra quyền hạn người dùng từ LocalStorage
   const user = JSON.parse(localStorage.getItem('iot_user') || '{"role":"ADMIN"}');
   const isAdmin = user.role === 'ADMIN';
 
-  // Tab lọc thiết bị: Mặc định là 'ACTIVE' (Các thiết bị đang BẬT)
-  const [filterTab, setFilterTab] = useState('ACTIVE');
-  // Modal hiển thị chi tiết khi bấm vào dấu !
+  // 2. State quản lý Modal xem chi tiết thiết bị (khi click nút dấu !)
   const [detailModal, setDetailModal] = useState({ open: false, device: null });
-  // Modal báo thành công sau khi toggle
+
+  // 3. State quản lý Modal thông báo thành công sau khi gạt công tắc
   const [successModal, setSuccessModal] = useState({ open: false, device: null, action: '' });
 
-  // Lọc danh sách thiết bị theo tab được chọn
-  const filteredDevices = useMemo(() => {
-    switch (filterTab) {
-      case 'ACTIVE':
-        return devices.filter((d) => d.current_state === 'ON' && d.is_connected);
-      case 'LAMP':
-        return devices.filter((d) => d.device_type === 'LAMP');
-      case 'FAN':
-        return devices.filter((d) => d.device_type === 'FAN');
-      case 'ALL':
-      default:
-        return devices;
-    }
-  }, [devices, filterTab]);
+  // 4. Danh sách hiển thị: Tất cả các thiết bị trong hệ thống
+  const allDevices = useMemo(() => {
+    return devices;
+  }, [devices]);
 
+  // 5. Hàm render Icon tương ứng cho từng loại thiết bị và trạng thái hoạt động
   const renderDeviceIcon = (type, state, isConnected) => {
+    // Nếu thiết bị chưa cắm phần cứng -> Hiện icon mất kết nối màu xám
     if (!isConnected) {
       return <DisconnectOutlined style={{ fontSize: 22, color: '#9CA3AF' }} />;
     }
+    // Nếu là Đèn (LAMP)
     if (type === 'LAMP') {
       return state === 'ON' ? (
-        <BulbFilled style={{ fontSize: 24, color: '#E05318' }} />
+        <BulbFilled style={{ fontSize: 24, color: '#E05318' }} /> // Đèn sáng màu cam
       ) : (
-        <BulbOutlined style={{ fontSize: 24, color: '#6B7280' }} />
+        <BulbOutlined style={{ fontSize: 24, color: '#6B7280' }} /> // Đèn tắt màu xám viền
       );
     }
+    // Nếu là Quạt (FAN): Sử dụng spin={true} để quạt tự xoay tròn khi bật ON
     return (
       <SyncOutlined
-        spin={state === 'ON'}
+        spin={state === 'ON'} // Xoay 360 độ liên tục khi BẬT
         style={{ fontSize: 24, color: state === 'ON' ? '#0891B2' : '#6B7280' }}
       />
     );
   };
 
+  // 6. Hàm xử lý khi người dùng gạt công tắc Switch
   const handleSwitchChange = async (device, checked) => {
+    // Chặn thao tác nếu tài khoản là Sinh viên (không có quyền Admin)
     if (!isAdmin) {
       notification.warning({
         message: 'Hạn chế quyền hạn (Chỉ xem)',
@@ -71,6 +89,7 @@ export default function DevicePanel({ devices = [], onToggleDevice, loadingMap =
       return;
     }
 
+    // Chặn thao tác nếu thiết bị chưa kết nối phần cứng thực tế
     if (!device.is_connected) {
       notification.warning({
         message: 'Thiết bị chưa kết nối',
@@ -81,9 +100,12 @@ export default function DevicePanel({ devices = [], onToggleDevice, loadingMap =
 
     const action = checked ? 'ON' : 'OFF';
     try {
+      // Gọi hàm onToggleDevice từ DashboardPage để gửi request POST xuống Backend
       await onToggleDevice(device.device_code, action);
+      // Mở modal thông báo thành công
       setSuccessModal({ open: true, device, action });
     } catch (err) {
+      // Thông báo lỗi nếu sau 5s không nhận được gói tin xác nhận (ACK) từ ESP32
       notification.error({
         message: 'Điều khiển thất bại / Timeout',
         description: err.message || 'Không nhận được gói tin phản hồi (ACK) từ ESP32 sau 5s',
@@ -101,23 +123,24 @@ export default function DevicePanel({ devices = [], onToggleDevice, loadingMap =
       }}
       bodyStyle={{ padding: '18px 20px' }}
     >
-      {/* Header Panel */}
+      {/* Header Panel: Tiêu đề + Tag Admin/View Only + Bộ đếm tổng số */}
       <div style={{ marginBottom: 14 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 6 }}>
           <Title level={4} style={{ margin: 0, color: '#1F2937', fontWeight: 600, fontSize: 16 }}>
             Bảng điều khiển thiết bị
           </Title>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            {/* Tag hiển thị quyền hạn */}
             <Tag color={isAdmin ? 'volcano' : 'default'} style={{ margin: 0, fontSize: 11 }}>
               {isAdmin ? 'Admin' : 'View Only'}
             </Tag>
             <Text style={{ fontSize: 12, color: '#6B7280' }}>
-              Tổng: <strong>{filteredDevices.length}</strong>
+              Tổng: <strong>{allDevices.length}</strong>
             </Text>
           </div>
         </div>
 
-        {/* Cảnh báo phân quyền cho tài khoản Sinh viên */}
+        {/* Thanh cảnh báo nhỏ nếu đang ở chế độ Sinh viên (Chỉ xem) */}
         {!isAdmin && (
           <div
             style={{
@@ -137,34 +160,21 @@ export default function DevicePanel({ devices = [], onToggleDevice, loadingMap =
             <span>Chế độ Sinh viên: Không có quyền thêm, sửa, xóa hoặc đổi trạng thái thiết bị.</span>
           </div>
         )}
-
-        {/* Thanh chọn loại thiết bị (Mặc định: Đang bật) */}
-        <Segmented
-          block
-          value={filterTab}
-          onChange={(val) => setFilterTab(val)}
-          options={[
-            { label: 'Đang bật', value: 'ACTIVE' },
-            { label: 'Tất cả', value: 'ALL' },
-            { label: 'Đèn', value: 'LAMP' },
-            { label: 'Quạt', value: 'FAN' },
-          ]}
-          style={{ background: '#F3F4F6', padding: 3, borderRadius: 8 }}
-        />
       </div>
 
-      {/* Danh sách thiết bị có cơ chế cuộn Scroll khi nhiều */}
+      {/* Danh sách tất cả các thiết bị (có thanh cuộn dọc nếu danh sách dài > 380px) */}
       <div
         style={{
           maxHeight: 380,
-          overflowY: 'auto',
+          overflowY: 'auto', // Tự động bật scroll dọc khi vượt quá 380px
           paddingRight: 4,
           display: 'flex',
           flexDirection: 'column',
           gap: 12,
         }}
       >
-        {filteredDevices.length === 0 ? (
+        {/* Trường hợp chưa có thiết bị nào */}
+        {allDevices.length === 0 ? (
           <div
             style={{
               padding: '32px 16px',
@@ -176,15 +186,14 @@ export default function DevicePanel({ devices = [], onToggleDevice, loadingMap =
             }}
           >
             <AppstoreOutlined style={{ fontSize: 24, marginBottom: 8, display: 'block' }} />
-            {filterTab === 'ACTIVE'
-              ? 'Hiện không có thiết bị nào đang bật'
-              : 'Không có thiết bị thuộc nhóm này'}
+            Không có thiết bị nào trong hệ thống
           </div>
         ) : (
-          filteredDevices.map((device) => {
-            const isLoading = !!loadingMap[device.device_code];
-            const isOnline = device.is_connected;
-            const isOn = device.current_state === 'ON';
+          // Duyệt qua danh sách tất cả thiết bị để render từng hàng điều khiển
+          allDevices.map((device) => {
+            const isLoading = !!loadingMap[device.device_code]; // Đang chờ lệnh bật/tắt của riêng thiết bị này
+            const isOnline = device.is_connected; // Có cắm phần cứng hay không
+            const isOn = device.current_state === 'ON'; // Đang BẬT hay TẮT
 
             return (
               <div
@@ -192,11 +201,8 @@ export default function DevicePanel({ devices = [], onToggleDevice, loadingMap =
                 style={{
                   borderRadius: 10,
                   padding: '12px 14px',
-                  background: isOnline
-                    ? isOn
-                      ? '#FFF7ED'
-                      : '#FFFFFF'
-                    : '#F9FAFB',
+                  // Đổi màu nền cam nhạt nếu đang BẬT, màu trắng nếu TẮT, xám nếu mất kết nối
+                  background: isOnline ? (isOn ? '#FFF7ED' : '#FFFFFF') : '#F9FAFB',
                   border: isOnline
                     ? isOn
                       ? '1px solid #FDBA74'
@@ -208,8 +214,9 @@ export default function DevicePanel({ devices = [], onToggleDevice, loadingMap =
                   transition: 'all 0.2s ease',
                 }}
               >
-                {/* Left: Icon & Info */}
+                {/* Phần bên Trái: Hộp Icon + Tên thiết bị + Nút dấu ! xem vị trí */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  {/* Hộp vuông 40x40px chứa icon */}
                   <div
                     style={{
                       width: 40,
@@ -225,12 +232,13 @@ export default function DevicePanel({ devices = [], onToggleDevice, loadingMap =
                     {renderDeviceIcon(device.device_type, device.current_state, isOnline)}
                   </div>
 
+                  {/* Thông tin tên và mã định danh */}
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <Text strong style={{ fontSize: 14, color: isOnline ? '#1F2937' : '#9CA3AF' }}>
                         {device.device_name}
                       </Text>
-                      {/* Nút bấm vào dấu ! để xem popup chi tiết */}
+                      {/* Nút bấm dấu ! mở popup chi tiết phòng & chân GPIO */}
                       <Tooltip title="Xem chi tiết mã phòng, vị trí lắp đặt">
                         <Button
                           type="text"
@@ -242,6 +250,7 @@ export default function DevicePanel({ devices = [], onToggleDevice, loadingMap =
                         />
                       </Tooltip>
                     </div>
+                    {/* Mã code và nhãn trạng thái chữ nhỏ */}
                     <div style={{ fontSize: 11, color: '#6B7280' }}>
                       <code>{device.device_code}</code>
                       {' · '}
@@ -252,21 +261,25 @@ export default function DevicePanel({ devices = [], onToggleDevice, loadingMap =
                   </div>
                 </div>
 
-                {/* Right: Switch Control */}
+                {/* Phần bên Phải: Công tắc gạt Switch */}
                 <div>
                   {!isAdmin ? (
+                    // Nếu là Sinh viên -> Khóa công tắc
                     <Tooltip title="Chỉ tài khoản Admin mới có quyền thêm/sửa/xóa hoặc điều khiển thiết bị!">
                       <Switch checked={isOn} disabled={true} size="small" />
                     </Tooltip>
                   ) : !isOnline ? (
+                    // Nếu chưa cắm phần cứng -> Khóa công tắc
                     <Tooltip title="Thiết bị chưa được kết nối phần cứng">
                       <Switch checked={false} disabled={true} size="small" />
                     </Tooltip>
                   ) : (
+                    // Nếu là Admin & Đã kết nối -> Cho phép gạt công tắc
                     <Switch
                       checked={isOn}
-                      loading={isLoading}
-                      disabled={isLoading}
+                      loading={isLoading} // Hiện xoay tròn loading khi đang chờ ESP32 phản hồi
+                      disabled={isLoading} // Khóa nút chống bấm spam liên tục
+                      size='small'
                       style={{ backgroundColor: isOn ? '#E05318' : undefined }}
                       onChange={(checked) => handleSwitchChange(device, checked)}
                     />
@@ -278,7 +291,7 @@ export default function DevicePanel({ devices = [], onToggleDevice, loadingMap =
         )}
       </div>
 
-      {/* POPUP CHI TIẾT THÔNG TIN THIẾT BỊ KHI BẤM DẤU ! */}
+      {/* MODAL 1: POPUP CHI TIẾT THÔNG TIN THIẾT BỊ KHI BẤM DẤU ! */}
       <Modal
         title={
           <Space>
@@ -353,7 +366,7 @@ export default function DevicePanel({ devices = [], onToggleDevice, loadingMap =
         )}
       </Modal>
 
-      {/* MODAL BÁO THÀNH CÔNG */}
+      {/* MODAL 2: POPUP BÁO THÀNH CÔNG VÀ CHUYỂN TRANG SANG LỊCH SỬ THAO TÁC */}
       <Modal
         title={
           <Space>
@@ -368,7 +381,7 @@ export default function DevicePanel({ devices = [], onToggleDevice, loadingMap =
             key="history"
             onClick={() => {
               setSuccessModal({ open: false, device: null, action: '' });
-              navigate('/action-history');
+              navigate('/action-history'); // Chuyển trang sang Lịch sử điều khiển
             }}
           >
             Xem lịch sử điều khiển

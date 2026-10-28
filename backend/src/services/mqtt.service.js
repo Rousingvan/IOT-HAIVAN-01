@@ -11,17 +11,23 @@ export const startMQTTService = (io) => {
     // 1. Nhận dữ liệu đo cảm biến định kỳ
     if (topic === TOPICS.TELEMETRY) {
       const { temperature, humidity, light, timestamp } = data;
+      // Nếu timestamp từ ESP32 là millis() (số nhỏ), dùng new Date() thời gian thực của Server
+      const measuredAt = (timestamp && Number(timestamp) > 1000000000000) 
+        ? new Date(Number(timestamp)) 
+        : new Date();
+
       const point = {
         temperature: Number(temperature),
         humidity: Number(humidity),
         light: Number(light),
-        measured_at: timestamp ? new Date(timestamp) : new Date(),
+        measured_at: measuredAt,
       };
 
       try {
         await SensorData.create(point);
+        console.log(`💾 [MongoDB] Đã lưu: ${point.temperature}°C | ${point.humidity}% | ${point.light} Lux lúc ${measuredAt.toLocaleTimeString()}`);
       } catch (err) {
-        console.warn('Không thể ghi SensorData vào DB:', err.message);
+        console.warn('⚠️ Không thể ghi SensorData vào DB:', err.message);
       }
 
       // Phát realtime qua Socket.io

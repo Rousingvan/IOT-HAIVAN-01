@@ -6,8 +6,10 @@ import mqtt from 'mqtt';
  * - Khi đem đi thi phòng Lab PTIT: Đổi sang IP mạng LAN máy tính của bạn (VD: mqtt://192.168.1.10:1883)
  * - Hoặc dùng Broker đám mây miễn phí: mqtt://broker.hivemq.com:1883 hoặc broker.emqx.io
  */
-const MQTT_BROKER_URL = process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883';
+const MQTT_BROKER_URL = process.env.MQTT_BROKER_URL || 'mqtt://localhost:18883';
 const CLIENT_ID = process.env.MQTT_CLIENT_ID || `backend_server_${Math.random().toString(16).slice(2, 8)}`;
+const MQTT_USERNAME = process.env.MQTT_USERNAME || undefined;
+const MQTT_PASSWORD = process.env.MQTT_PASSWORD || undefined;
 
 export const TOPICS = {
   TELEMETRY: 'esp32/telemetry',       // ESP32 gửi dữ liệu cảm biến định kỳ
@@ -18,12 +20,19 @@ export const TOPICS = {
 
 export const initMQTT = (onMessageReceived) => {
   console.log(`🔄 Đang kết nối tới MQTT Broker: ${MQTT_BROKER_URL}...`);
-  const client = mqtt.connect(MQTT_BROKER_URL, {
+  const connectOptions = {
     clientId: CLIENT_ID,
     clean: true,
     reconnectPeriod: 3000,
     connectTimeout: 5000,
-  });
+  };
+
+  if (MQTT_USERNAME) {
+    connectOptions.username = MQTT_USERNAME;
+    connectOptions.password = MQTT_PASSWORD;
+  }
+
+  const client = mqtt.connect(MQTT_BROKER_URL, connectOptions);
 
   client.on('connect', () => {
     console.log('✅ MQTT Client đã kết nối Broker thành công!');

@@ -17,14 +17,43 @@ import { apiService } from '../services/api';
 
 const { Title, Text } = Typography;
 
+/**
+ * ==============================================================================
+ * TRANG: ProfilePage (Hồ Sơ Sinh Viên & Tài Liệu Đồ Án)
+ * CHỨC NĂNG CHÍNH:
+ * - Trình bày thông tin sinh viên thực hiện: Họ tên, Mã SV, Lớp, Học phần, Giảng viên.
+ * - Quản lý ảnh đại diện sinh viên (Avatar) linh hoạt:
+ *     + Tải ảnh từ máy tính (hỗ trợ chuyển thành Base64 lưu vào LocalStorage).
+ *     + Dán link URL ảnh trực tiếp qua Modal.
+ *     + Xóa ảnh về icon mặc định.
+ *     + Phát sự kiện custom `avatar_updated` để đồng bộ Avatar tức thời với Sidebar.
+ * - Cung cấp 4 liên kết tài liệu đồ án chuẩn:
+ *     1. GitHub Repository: Mã nguồn toàn bộ hệ thống.
+ *     2. Figma Design: Thiết kế giao diện UI/UX.
+ *     3. Swagger API Docs: Tài liệu API RESTful.
+ *     4. Báo Cáo BTL (PDF): Bản báo cáo thuyết minh đồ án.
+ * 
+ * GỢI Ý CÁC TÙY CHỈNH THẦY CÔ CÓ THỂ YÊU CẦU:
+ * 1. Đổi kích thước Avatar: Sửa size={100} thành 120 hoặc 80.
+ * 2. Thay đổi đường link GitHub/Figma/Swagger/PDF: Chỉnh sửa dữ liệu trả về từ apiService.getProfile().
+ * 3. Thêm trường thông tin mới (VD: Số điện thoại, Email): Thêm khối <div style={{ display: 'flex' ... }}>.
+ * ==============================================================================
+ */
 export default function ProfilePage() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // State lưu trữ dữ liệu ảnh đại diện (Base64 hoặc URL)
   const [avatar, setAvatar] = useState(localStorage.getItem('iot_student_avatar') || '');
+
+  // State mở/đóng Modal dán URL ảnh
   const [urlModalOpen, setUrlModalOpen] = useState(false);
   const [inputUrl, setInputUrl] = useState('');
+
+  // Ref trỏ tới thẻ <input type="file"> ẩn
   const fileInputRef = useRef(null);
 
+  // useEffect: Gọi API lấy thông tin profile sinh viên từ Backend
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -40,33 +69,37 @@ export default function ProfilePage() {
     fetchProfile();
   }, []);
 
-  // Xử lý khi chọn file ảnh từ máy tính
+  // Handler khi người dùng chọn file ảnh từ máy tính
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Kiểm tra định dạng file ảnh
     if (!file.type.startsWith('image/')) {
       message.error('Vui lòng chọn file hình ảnh (JPG, PNG, GIF, WebP)!');
       return;
     }
 
+    // Giới hạn dung lượng tối đa 5MB
     if (file.size > 5 * 1024 * 1024) {
       message.error('Dung lượng ảnh tối đa là 5MB!');
       return;
     }
 
+    // Dùng FileReader để chuyển ảnh thành chuỗi Base64
     const reader = new FileReader();
     reader.onload = (event) => {
       const base64Data = event.target.result;
       setAvatar(base64Data);
       localStorage.setItem('iot_student_avatar', base64Data);
+      // Phát sự kiện avatar_updated để Sidebar tự cập nhật ngay lập tức
       window.dispatchEvent(new Event('avatar_updated'));
       message.success('Đã cập nhật ảnh đại diện sinh viên thành công!');
     };
     reader.readAsDataURL(file);
   };
 
-  // Xử lý khi dán URL ảnh
+  // Handler khi dán URL ảnh từ Modal
   const handleSaveUrl = () => {
     if (!inputUrl.trim()) {
       message.warning('Vui lòng nhập đường dẫn URL ảnh!');
@@ -80,7 +113,7 @@ export default function ProfilePage() {
     message.success('Đã cập nhật ảnh đại diện từ URL thành công!');
   };
 
-  // Xóa ảnh đại diện về mặc định
+  // Handler xóa ảnh đại diện về icon mặc định
   const handleRemoveAvatar = () => {
     setAvatar('');
     localStorage.removeItem('iot_student_avatar');
@@ -90,7 +123,7 @@ export default function ProfilePage() {
 
   return (
     <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-      {/* Tiêu đề trang */}
+      {/* 1. TIÊU ĐỀ TRANG */}
       <div style={{ marginBottom: 20 }}>
         <Title level={3} style={{ margin: 0, color: '#111827', fontWeight: 700, fontSize: 20 }}>
           Hồ sơ sinh viên & Tài liệu đồ án
@@ -98,8 +131,8 @@ export default function ProfilePage() {
       </div>
 
       <Row gutter={[20, 20]}>
-        {/* Cột Trái: Thông tin sinh viên & Ảnh */}
-        <Col xs={24} md={9}>
+        {/* CỘT TRÁI (md={9}): THÔNG TIN SINH VIÊN & AVATAR */}
+        <Col xs={24} md={15}>
           <Card
             loading={loading}
             style={{
@@ -114,7 +147,7 @@ export default function ProfilePage() {
             {/* Vùng hiển thị Avatar */}
             <div style={{ position: 'relative', display: 'inline-block', marginBottom: 14 }}>
               <Avatar
-                size={100}
+                size={140}
                 src={avatar || undefined}
                 icon={!avatar && <UserOutlined style={{ fontSize: 48 }} />}
                 style={{
@@ -126,7 +159,7 @@ export default function ProfilePage() {
                 }}
               />
 
-              {/* Input file ẩn */}
+              {/* Input file ẩn, được kích hoạt khi bấm nút "Tải ảnh lên" */}
               <input
                 type="file"
                 ref={fileInputRef}
@@ -136,7 +169,7 @@ export default function ProfilePage() {
               />
             </div>
 
-            {/* Các nút thao tác chèn ảnh */}
+            {/* Các nút thao tác Avatar */}
             <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
               <Tooltip title="Tải ảnh từ máy tính (JPG, PNG, WebP)">
                 <Button
@@ -172,6 +205,7 @@ export default function ProfilePage() {
               )}
             </div>
 
+            {/* Tên sinh viên */}
             <Title level={4} style={{ margin: 0, color: '#111827', fontWeight: 600, fontSize: 17 }}>
               {profile?.fullName || 'Lương Hải Vân'}
             </Title>
@@ -181,6 +215,7 @@ export default function ProfilePage() {
 
             <Divider style={{ margin: '18px 0' }} />
 
+            {/* Thông tin học vụ chi tiết */}
             <div style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <IdcardOutlined style={{ color: '#E05318', fontSize: 16 }} />
@@ -211,7 +246,7 @@ export default function ProfilePage() {
           </Card>
         </Col>
 
-        {/* Cột Phải: 4 Liên kết tài liệu */}
+        {/* CỘT PHẢI (md={15}): 4 LIÊN KẾT TÀI LIỆU ĐỒ ÁN */}
         <Col xs={24} md={15}>
           <Card
             title={<span style={{ fontSize: 15, fontWeight: 600 }}>Liên kết tài liệu đồ án</span>}
@@ -224,7 +259,7 @@ export default function ProfilePage() {
             bodyStyle={{ padding: '16px 20px' }}
           >
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {/* GitHub Link */}
+              {/* 1. Link GitHub Repository */}
               <div
                 style={{
                   display: 'flex',
@@ -252,7 +287,7 @@ export default function ProfilePage() {
                 </Button>
               </div>
 
-              {/* Figma Link */}
+              {/* 2. Link Figma Design */}
               <div
                 style={{
                   display: 'flex',
@@ -280,7 +315,7 @@ export default function ProfilePage() {
                 </Button>
               </div>
 
-              {/* Swagger API Docs Link */}
+              {/* 3. Link Swagger API Docs */}
               <div
                 style={{
                   display: 'flex',
@@ -308,7 +343,7 @@ export default function ProfilePage() {
                 </Button>
               </div>
 
-              {/* PDF Report Link */}
+              {/* 4. Link PDF Report */}
               <div
                 style={{
                   display: 'flex',
@@ -371,4 +406,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-

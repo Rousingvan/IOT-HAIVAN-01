@@ -1,0 +1,8 @@
+$kind: http-request
+name: 01. Tra cứu Lịch sử Điều khiển Thiết bị (Phân trang)
+url: "{{baseUrl}}/action-history?page=1&pageSize=10"
+method: GET
+queryParams:
+  page: "1"
+  pageSize: "10"
+order: 1000
