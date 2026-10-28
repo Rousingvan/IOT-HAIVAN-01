@@ -41,12 +41,11 @@ export default function DevicePanel({ devices = [], onToggleDevice, loadingMap =
   // 3. State quản lý Modal thông báo thành công sau khi gạt công tắc
   const [successModal, setSuccessModal] = useState({ open: false, device: null, action: '' });
 
-  // 4. Danh sách hiển thị: 3 Đèn chiếu sáng điều khiển thủ công (Đèn 1: D18, Đèn 2: D19, Đèn 3: D22)
+  // 4. Danh sách hiển thị: 4 Đèn chiếu sáng điều khiển (Đèn 1: D18, Đèn 2: D19, Đèn 3: D22, Đèn 4: D21)
   const allDevices = useMemo(() => {
     return devices.filter(
       (d) =>
         d.device_code !== 'ALERT_LED' &&
-        d.device_code !== 'P201_LAMP_04' &&
         d.device_type !== 'FAN' &&
         !d.device_code?.includes('FAN')
     );

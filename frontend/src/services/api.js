@@ -85,6 +85,17 @@ let mockDevices = [
     current_state: 'OFF',    // Mặc định đang tắt
     updated_at: new Date().toISOString(),
   },
+  {
+    device_code: 'P201_LAMP_04',
+    device_name: 'Đèn Chiếu Sáng 04 (Cảnh Báo)',
+    device_type: 'LAMP',
+    room: 'Phòng Thực Hành IoT 201 - Nhà A2',
+    location: 'Đèn LED chân GPIO 21',
+    pin_relay: 21,
+    is_connected: true,
+    current_state: 'OFF',
+    updated_at: new Date().toISOString(),
+  },
 ];
 
 /**

@@ -24,11 +24,14 @@ PubSubClient mqttClient(espClient);
 unsigned long lastTelemetryTime = 0;
 const unsigned long TELEMETRY_INTERVAL = 2000; // Chu kỳ gửi dữ liệu cảm biến: 2 giây
 
-// Cấu hình cảnh báo nhấp nháy chu kỳ 2s trên Đèn Cảnh Báo (PIN_LED_ALERT = GPIO 21)
+// Cấu hình cảnh báo nhấp nháy chu kỳ 2s trên chân D21
 int lightAlertThreshold = 600;        // Ngưỡng ánh sáng X (mặc định 600 Lux, đồng bộ từ Web)
-bool isLightAlerting = false;         // Cờ báo vượt ngưỡng
+bool isLightAlerting = false;         // Cờ báo vượt ngưỡng ánh sáng
 unsigned long lastBlinkTime = 0;      // Mốc thời gian chớp tắt LED
-bool alertLedState = false;           // Trạng thái chân LED nháy
+bool alertLedState = false;           // Trạng thái nháy
+
+// Trạng thái công tắc thủ công của Đèn 4 (chân GPIO 21) từ Web
+bool lamp04ManualState = false;
 
 // =========================================================================
 // HÀM KẾT NỐI WIFI
@@ -58,7 +61,7 @@ void setupWiFi() {
     Serial.print("📍 Địa chỉ IP ESP32: ");
     Serial.println(WiFi.localIP());
     digitalWrite(PIN_LED_STATUS, LOW);
-    digitalWrite(PIN_LED_ALERT, LOW); // Mặc định TẮT đèn cảnh báo (GPIO 21)
+    digitalWrite(PIN_LED_ALERT, LOW); // Mặc định TẮT đèn chân 21
   } else {
     Serial.println("\n⚠️ Không thể kết nối WiFi. Hãy kiểm tra lại SSID/Password/2.4GHz.");
     WiFi.disconnect(true);
@@ -99,18 +102,29 @@ void onMqttCallback(char* topic, byte* payload, unsigned int length) {
 
   Serial.printf("⚡ Lệnh nhận: RequestId=%s, Device=%s, Action=%s\n", requestId ? requestId : "N/A", deviceCode, action);
 
-  // Tìm kiếm thiết bị trong bảng cấu hình Relay (Đèn 1: 18, Đèn 2: 19, Đèn 3: 22)
+  // Tìm kiếm thiết bị trong bảng cấu hình Relay (Đèn 1: 18, Đèn 2: 19, Đèn 3: 22, Đèn 4: 21)
   bool found = false;
   for (int i = 0; i < NUM_DEVICES; i++) {
     if (strcmp(DEVICES[i].deviceCode, deviceCode) == 0) {
       found = true;
 
-      // 1. Gạt chân GPIO Relay
       bool isOn = (strcmp(action, "ON") == 0);
-      int pinVal = DEVICES[i].activeLow ? (isOn ? LOW : HIGH) : (isOn ? HIGH : LOW);
-      digitalWrite(DEVICES[i].pin, pinVal);
 
-      Serial.printf("🔌 Đã gạt GPIO %d sang mức %s\n", DEVICES[i].pin, isOn ? "ON" : "OFF");
+      // Nếu điều khiển LAMP_04 (chân GPIO 21): lưu lại trạng thái thủ công
+      if (strcmp(deviceCode, "LAMP_04") == 0) {
+        lamp04ManualState = isOn;
+        // Nếu không có cảnh báo vượt ngưỡng thì áp dụng ngay trạng thái thủ công
+        if (!isLightAlerting) {
+          int pinVal = DEVICES[i].activeLow ? (isOn ? LOW : HIGH) : (isOn ? HIGH : LOW);
+          digitalWrite(DEVICES[i].pin, pinVal);
+        }
+      } else {
+        // Các đèn 1, 2, 3 điều khiển bình thường
+        int pinVal = DEVICES[i].activeLow ? (isOn ? LOW : HIGH) : (isOn ? HIGH : LOW);
+        digitalWrite(DEVICES[i].pin, pinVal);
+      }
+
+      Serial.printf("🔌 Đã gạt %s (GPIO %d) sang mức %s\n", deviceCode, DEVICES[i].pin, isOn ? "ON" : "OFF");
 
       // 2. Lập tức phản hồi gói tin ACK tới Server
       StaticJsonDocument<256> ackDoc;
@@ -173,11 +187,11 @@ void setup() {
   pinMode(PIN_LED_STATUS, OUTPUT);
   digitalWrite(PIN_LED_STATUS, LOW);
 
-  // Cấu hình chân LED Cảnh báo (chân GPIO 21)
+  // Cấu hình chân LED Cảnh báo / Đèn 4 (chân GPIO 21)
   pinMode(PIN_LED_ALERT, OUTPUT);
-  digitalWrite(PIN_LED_ALERT, LOW); // Mặc định ban đầu TẮT đèn cảnh báo
+  digitalWrite(PIN_LED_ALERT, LOW);
 
-  // Khởi tạo chân GPIO cho các Relay đèn điều khiển (Đèn 1: 18, Đèn 2: 19, Đèn 3: 22)
+  // Khởi tạo chân GPIO cho các Relay đèn điều khiển (Đèn 1: 18, Đèn 2: 19, Đèn 3: 22, Đèn 4: 21)
   for (int i = 0; i < NUM_DEVICES; i++) {
     pinMode(DEVICES[i].pin, OUTPUT);
     digitalWrite(DEVICES[i].pin, DEVICES[i].activeLow ? HIGH : LOW);
@@ -208,18 +222,24 @@ void loop() {
 
   unsigned long now = millis();
 
-  // ĐỀ 1: Khi ánh sáng vượt ngưỡng X -> Nhấp nháy LED cảnh báo (GPIO 21) liên tục chu kỳ 2s (1s BẬT / 1s TẮT)
+  // ĐỀ 1: LOGIC ĐÈN CHÂN 21 (ĐÈN CẢNH BÁO + ĐÈN 4):
+  // 1. Khi ánh sáng vượt ngưỡng X: Ưu tiên chế độ cảnh báo -> Nhấp nháy 2s (1s BẬT / 1s TẮT) liên tục
   if (isLightAlerting) {
-    if (now - lastBlinkTime >= 1000) { // Cứ 1000ms đổi trạng thái 1 lần = chu kỳ 2s (1000ms ON / 1000ms OFF)
+    if (now - lastBlinkTime >= 1000) { // Chu kỳ 2000ms (1000ms ON / 1000ms OFF)
       lastBlinkTime = now;
       alertLedState = !alertLedState;
       digitalWrite(PIN_LED_ALERT, alertLedState ? HIGH : LOW);
     }
   } else {
-    // Khi KHÔNG cảnh báo (ánh sáng <= ngưỡng X) -> TẮT HẲN đèn cảnh báo GPIO 21
-    if (alertLedState || digitalRead(PIN_LED_ALERT) == HIGH) {
-      alertLedState = false;
-      digitalWrite(PIN_LED_ALERT, LOW);
+    // 2. Khi KHÔNG có cảnh báo (ánh sáng <= X): Hoạt động như Đèn 4 theo công tắc gạt thủ công từ Web
+    if (lamp04ManualState) {
+      if (digitalRead(PIN_LED_ALERT) != HIGH) {
+        digitalWrite(PIN_LED_ALERT, HIGH);
+      }
+    } else {
+      if (digitalRead(PIN_LED_ALERT) != LOW) {
+        digitalWrite(PIN_LED_ALERT, LOW);
+      }
     }
   }
 
@@ -240,16 +260,18 @@ void loop() {
     bool prevAlerting = isLightAlerting;
     isLightAlerting = (lightLux > lightAlertThreshold);
 
-    // Nếu vừa mới thoát khỏi trạng thái cảnh báo -> Tắt ngay lập tức
+    // Nếu vừa mới thoát khỏi cảnh báo -> Trả lại trạng thái công tắc thủ công của Đèn 4
     if (prevAlerting && !isLightAlerting) {
       alertLedState = false;
-      digitalWrite(PIN_LED_ALERT, LOW);
-      Serial.printf("☀️ Ánh sáng %d Lux <= Ngưỡng %d Lux -> TẮT LED cảnh báo (GPIO 21)\n", lightLux, lightAlertThreshold);
+      digitalWrite(PIN_LED_ALERT, lamp04ManualState ? HIGH : LOW);
+      Serial.printf("☀️ Ánh sáng %d Lux <= Ngưỡng %d Lux -> Trả Đèn 4 về trạng thái thủ công: %s\n", 
+                    lightLux, lightAlertThreshold, lamp04ManualState ? "ON" : "OFF");
     } else if (!prevAlerting && isLightAlerting) {
       lastBlinkTime = now;
       alertLedState = true;
       digitalWrite(PIN_LED_ALERT, HIGH);
-      Serial.printf("🚨 Ánh sáng %d Lux > Ngưỡng %d Lux -> BẬT chế độ nhấp nháy 2s LED cảnh báo (GPIO 21)\n", lightLux, lightAlertThreshold);
+      Serial.printf("🚨 Ánh sáng %d Lux > Ngưỡng %d Lux -> Kích hoạt chế độ CẢNH BÁO NHẤP NHÁY 2s (GPIO 21)\n", 
+                    lightLux, lightAlertThreshold);
     }
 
     // Kiểm tra tính hợp lệ của số liệu DHT22
