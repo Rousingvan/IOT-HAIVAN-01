@@ -9,6 +9,8 @@ import {
   DisconnectOutlined,
   EnvironmentOutlined,
   AppstoreOutlined,
+  AlertOutlined,
+  AlertFilled,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 
@@ -18,23 +20,12 @@ const { Title, Text } = Typography;
  * ==============================================================================
  * COMPONENT: DevicePanel
  * CHỨC NĂNG:
- * - Bảng điều khiển và giám sát trạng thái thiết bị thời gian thực (Đèn, Quạt...).
+ * - Bảng điều khiển và giám sát trạng thái thiết bị thời gian thực (Đèn, Quạt, Đèn Cảnh Báo...).
  * - Kiểm tra phân quyền RBAC (Chỉ tài khoản ADMIN mới được gạt công tắc bật/tắt).
- * - Hiển thị trực tiếp danh sách tất cả các thiết bị trong hệ thống.
+ * - Hiển thị trực tiếp danh sách tất cả các thiết bị trong hệ thống (Đèn 1, Đèn 2, Đèn 3, Đèn Cảnh Báo).
  * - Hoạt ảnh trực quan: Quạt xoay 360 độ liên tục khi BẬT (spin={true}).
  * - Chống Spam click: Vòng quay loading trên từng nút switch trong lúc chờ xác nhận từ ESP32.
  * - 2 Hộp thoại Modal: Modal xem vị trí phòng/chân GPIO và Modal báo thành công.
- * 
- * PROPS:
- * @param {Array} devices - Danh sách thiết bị lấy từ Backend
- * @param {Function} onToggleDevice - Callback gọi API bật/tắt (deviceCode, action)
- * @param {Object} loadingMap - Object lưu cờ loading của từng thiết bị { LED1: true }
- * 
- * GỢI Ý CÁC TÙY CHỈNH THẦY CÔ CÓ THỂ YÊU CẦU:
- * 1. Đổi màu nút Switch khi BẬT: sửa style={{ backgroundColor: isOn ? '#Màu_Mới' : undefined }}.
- * 2. Đổi tab mặc định: sửa useState('ACTIVE') thành useState('ALL').
- * 3. Tắt popup Modal báo thành công sau mỗi lần gạt switch.
- * 4. Thêm loại thiết bị mới (Điều hòa, Máy bơm): thêm case vào filteredDevices và renderDeviceIcon.
  * ==============================================================================
  */
 export default function DevicePanel({ devices = [], onToggleDevice, loadingMap = {} }) {
@@ -60,6 +51,14 @@ export default function DevicePanel({ devices = [], onToggleDevice, loadingMap =
     // Nếu thiết bị chưa cắm phần cứng -> Hiện icon mất kết nối màu xám
     if (!isConnected) {
       return <DisconnectOutlined style={{ fontSize: 22, color: '#9CA3AF' }} />;
+    }
+    // Nếu là Đèn Cảnh Báo (ALERT / ALERT_LED)
+    if (type === 'ALERT' || type === 'ALERT_LED') {
+      return state === 'ON' ? (
+        <AlertFilled style={{ fontSize: 24, color: '#DC2626' }} /> // Đèn cảnh báo sáng màu đỏ
+      ) : (
+        <AlertOutlined style={{ fontSize: 24, color: '#6B7280' }} /> // Đèn cảnh báo tắt
+      );
     }
     // Nếu là Đèn (LAMP)
     if (type === 'LAMP') {
@@ -162,7 +161,7 @@ export default function DevicePanel({ devices = [], onToggleDevice, loadingMap =
         )}
       </div>
 
-      {/* Danh sách tất cả các thiết bị (hỗ trợ hiển thị đủ 4 đèn Đề 1) */}
+      {/* Danh sách tất cả các thiết bị (hỗ trợ hiển thị đủ Đèn 1, 2, 3 và Đèn Cảnh Báo) */}
       <div
         style={{
           maxHeight: 460,
@@ -194,6 +193,7 @@ export default function DevicePanel({ devices = [], onToggleDevice, loadingMap =
             const isLoading = !!loadingMap[device.device_code]; // Đang chờ lệnh bật/tắt của riêng thiết bị này
             const isOnline = device.is_connected; // Có cắm phần cứng hay không
             const isOn = device.current_state === 'ON'; // Đang BẬT hay TẮT
+            const isAlertDevice = device.device_type === 'ALERT' || device.device_code === 'ALERT_LED';
 
             return (
               <div
@@ -201,11 +201,19 @@ export default function DevicePanel({ devices = [], onToggleDevice, loadingMap =
                 style={{
                   borderRadius: 10,
                   padding: '12px 14px',
-                  // Đổi màu nền cam nhạt nếu đang BẬT, màu trắng nếu TẮT, xám nếu mất kết nối
-                  background: isOnline ? (isOn ? '#FFF7ED' : '#FFFFFF') : '#F9FAFB',
+                  // Đổi màu nền cam nhạt nếu đang BẬT, đỏ nhạt nếu là đèn cảnh báo BẬT, trắng nếu TẮT
+                  background: isOnline
+                    ? isOn
+                      ? isAlertDevice
+                        ? '#FEF2F2'
+                        : '#FFF7ED'
+                      : '#FFFFFF'
+                    : '#F9FAFB',
                   border: isOnline
                     ? isOn
-                      ? '1px solid #FDBA74'
+                      ? isAlertDevice
+                        ? '1px solid #FCA5A5'
+                        : '1px solid #FDBA74'
                       : '1px solid #E5E7EB'
                     : '1px dashed #D1D5DB',
                   display: 'flex',
@@ -235,16 +243,21 @@ export default function DevicePanel({ devices = [], onToggleDevice, loadingMap =
                   {/* Thông tin tên và mã định danh */}
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <Text strong style={{ fontSize: 14, color: isOnline ? '#1F2937' : '#9CA3AF' }}>
+                      <Text strong style={{ fontSize: 14, color: isOnline ? (isAlertDevice && isOn ? '#DC2626' : '#1F2937') : '#9CA3AF' }}>
                         {device.device_name}
                       </Text>
+                      {isAlertDevice && (
+                        <Tag color="error" style={{ fontSize: 10, padding: '0 4px', lineHeight: '18px', margin: 0 }}>
+                          Cảnh báo
+                        </Tag>
+                      )}
                       {/* Nút bấm dấu ! mở popup chi tiết phòng & chân GPIO */}
                       <Tooltip title="Xem chi tiết mã phòng, vị trí lắp đặt">
                         <Button
                           type="text"
                           shape="circle"
                           size="small"
-                          icon={<InfoCircleOutlined style={{ color: '#E05318', fontSize: 13 }} />}
+                          icon={<InfoCircleOutlined style={{ color: isAlertDevice ? '#DC2626' : '#E05318', fontSize: 13 }} />}
                           onClick={() => setDetailModal({ open: true, device })}
                           style={{ width: 22, height: 22 }}
                         />
@@ -254,7 +267,7 @@ export default function DevicePanel({ devices = [], onToggleDevice, loadingMap =
                     <div style={{ fontSize: 11, color: '#6B7280' }}>
                       <code>{device.device_code}</code>
                       {' · '}
-                      <span style={{ color: isOnline ? (isOn ? '#389E0D' : '#6B7280') : '#9CA3AF', fontWeight: 500 }}>
+                      <span style={{ color: isOnline ? (isOn ? (isAlertDevice ? '#DC2626' : '#389E0D') : '#6B7280') : '#9CA3AF', fontWeight: 500 }}>
                         {isOnline ? (isOn ? 'Đang bật' : 'Đang tắt') : 'Chưa kết nối'}
                       </span>
                     </div>
@@ -279,8 +292,8 @@ export default function DevicePanel({ devices = [], onToggleDevice, loadingMap =
                       checked={isOn}
                       loading={isLoading} // Hiện xoay tròn loading khi đang chờ ESP32 phản hồi
                       disabled={isLoading} // Khóa nút chống bấm spam liên tục
-                      size='small'
-                      style={{ backgroundColor: isOn ? '#E05318' : undefined }}
+                      size="small"
+                      style={{ backgroundColor: isOn ? (isAlertDevice ? '#DC2626' : '#E05318') : undefined }}
                       onChange={(checked) => handleSwitchChange(device, checked)}
                     />
                   )}
@@ -333,7 +346,7 @@ export default function DevicePanel({ devices = [], onToggleDevice, loadingMap =
 
             <Descriptions.Item label="Vị trí trong phòng">
               <span style={{ color: '#1F2937', fontWeight: 500 }}>
-                {detailModal.device.location || 'Đèn trần dãy giữa bàn 3-4'}
+                {detailModal.device.location || 'Khu vực phòng thực hành'}
               </span>
             </Descriptions.Item>
 

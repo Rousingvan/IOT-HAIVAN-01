@@ -96,6 +96,17 @@ let mockDevices = [
     current_state: 'OFF',    // Mặc định đang tắt
     updated_at: new Date().toISOString(),
   },
+  {
+    device_code: 'ALERT_LED',
+    device_name: 'Đèn Cảnh Báo Ánh Sáng',
+    device_type: 'ALERT',
+    room: 'Phòng Thực Hành IoT 201 - Nhà A2',
+    location: 'LED Onboard ESP32 (GPIO 2)',
+    pin_relay: 2,
+    is_connected: true,
+    current_state: 'OFF',
+    updated_at: new Date().toISOString(),
+  },
   /*
   // Tạm thời comment thiết bị quạt phục vụ bài demo tập trung vào hệ thống đèn chiếu sáng
   {

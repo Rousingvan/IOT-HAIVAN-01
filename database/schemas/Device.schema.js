@@ -15,7 +15,7 @@ const deviceSchema = new mongoose.Schema(
     device_type: {
       type: String,
       required: true,
-      enum: ['LAMP', 'FAN', 'PUMP', 'AC', 'OTHER'],
+      enum: ['LAMP', 'FAN', 'PUMP', 'AC', 'ALERT', 'OTHER'],
       default: 'LAMP',
     },
     pin_relay: {

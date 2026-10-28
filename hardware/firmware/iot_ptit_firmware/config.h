@@ -49,6 +49,7 @@ const DeviceMapping DEVICES[] = {{"LAMP_01", 18, true, false},
                                  {"LAMP_02", 19, true, false},
                                  {"LAMP_03", 21, true, false},
                                  {"LAMP_04", 22, true, false},
+                                 {"ALERT_LED", 2, true, false},
                                  {"LED_ONBOARD", 2, true, false}};
 
 const int NUM_DEVICES = sizeof(DEVICES) / sizeof(DEVICES[0]);

@@ -138,6 +138,14 @@ async function seedDatabase() {
         is_connected: true,    // Đã đấu nối phần cứng thực tế
         current_state: 'OFF',  // Trạng thái ban đầu: Đang TẮT
       },
+      {
+        device_code: 'ALERT_LED',
+        device_name: 'Đèn Cảnh Báo Ánh Sáng',
+        device_type: 'ALERT',
+        pin_relay: 2,
+        is_connected: true,
+        current_state: 'OFF',
+      },
       /*
       // Tạm thời comment thiết bị quạt theo yêu cầu thực hành/demo
       {

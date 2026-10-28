@@ -307,7 +307,7 @@ export default function ActionHistoryPage() {
           onClick={() => setStatsModalOpen(true)}
           style={{ borderRadius: 6, fontWeight: 600 }}
         >
-          Thống Kê Cảnh Báo (Đề 1)
+          Thống kê cảnh báo
         </Button>
       </div>
 
@@ -496,7 +496,7 @@ export default function ActionHistoryPage() {
                 <Option value="ALL">Tất cả</Option>
                 <Option value="LAMP">Đèn</Option>
                 <Option value="FAN">Quạt</Option>
-                <Option value="ALERT_LED">🚨 Đèn Cảnh Báo (Đề 1)</Option>
+                <Option value="ALERT_LED">Đèn cảnh báo</Option>
               </Select>
             </Space>
 
@@ -590,7 +590,7 @@ export default function ActionHistoryPage() {
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <AlertFilled style={{ color: '#DC2626', fontSize: 18 }} />
-            <span>Thống Kê Số Lượng Cảnh Báo Ánh Sáng (Đề 1)</span>
+            <span>THỐNG KÊ SỐ LƯỢNG CẢNH BÁO ÁNH SÁNG VƯỢT NGƯỠNG</span>
           </div>
         }
         open={statsModalOpen}
@@ -604,7 +604,7 @@ export default function ActionHistoryPage() {
       >
         <div style={{ marginBottom: 16 }}>
           <Text type="secondary" style={{ fontSize: 13 }}>
-            Hệ thống tự động gom nhóm lịch sử cảnh báo khi cường độ ánh sáng vượt ngưỡng{' '}
+            Ngưỡng cảnh báo hiện tại:{' '}
             <strong>{alertStats.currentThreshold || 600} Lux</strong>.
           </Text>
         </div>

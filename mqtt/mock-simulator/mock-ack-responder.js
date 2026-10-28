@@ -19,6 +19,7 @@ const mockHardwareState = {
   LAMP_02: 'OFF',
   LAMP_03: 'OFF',
   LAMP_04: 'OFF',
+  ALERT_LED: 'OFF',
   FAN_01: 'OFF',
 };
 
