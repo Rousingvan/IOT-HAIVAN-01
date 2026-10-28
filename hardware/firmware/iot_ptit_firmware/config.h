@@ -29,7 +29,9 @@
 #define PIN_DHT22 4      // Chân cảm biến DHT22 (Nhiệt độ & Độ ẩm)
 #define DHTTYPE DHT22
 #define PIN_LDR 34       // Chân Analog ADC1 cảm biến Quang trở Ánh sáng
-#define PIN_LED_ALERT 22 // Chân LED cảnh báo ánh sáng (D22 - Đề 1)
+
+// ĐÈN CẢNH BÁO ÁNH SÁNG (ĐỀ 1): Dùng LED 3 hiện tại (chân GPIO 21) làm đèn cảnh báo
+#define PIN_LED_ALERT 21 
 #define PIN_LED_STATUS 2 // LED onboard trên ESP32 (GPIO 2)
 
 // Định nghĩa mảng cấu hình thiết bị Relay (Kiến trúc mở rộng Plug-and-Play)
@@ -40,15 +42,13 @@ struct DeviceMapping {
   bool activeLow; // Relay kích mức thấp (LOW = ON) hay kích mức cao (HIGH = ON)
 };
 
-// Khai báo danh sách thiết bị Relay/Đèn điều khiển:
+// Khai báo danh sách thiết bị Relay/Đèn điều khiển thủ công:
 // - LAMP_01: Đèn LED 1 trên chân GPIO 18
 // - LAMP_02: Đèn LED 2 trên chân GPIO 19
-// - LAMP_03: Đèn LED 3 trên chân GPIO 21
-// Chân 22 dành riêng cho LED Cảnh Báo Ánh Sáng (tự động nhấp nháy khi vượt ngưỡng)
+// Chân 21 (Đèn 3 cũ) được tách riêng thành LED Cảnh Báo Ánh Sáng (tự động nhấp nháy 2s khi vượt ngưỡng X)
 const DeviceMapping DEVICES[] = {
   {"LAMP_01", 18, true, false},
-  {"LAMP_02", 19, true, false},
-  {"LAMP_03", 21, true, false}
+  {"LAMP_02", 19, true, false}
 };
 
 const int NUM_DEVICES = sizeof(DEVICES) / sizeof(DEVICES[0]);

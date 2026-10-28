@@ -24,7 +24,7 @@ PubSubClient mqttClient(espClient);
 unsigned long lastTelemetryTime = 0;
 const unsigned long TELEMETRY_INTERVAL = 2000; // Chu kỳ gửi dữ liệu cảm biến: 2 giây
 
-// Cấu hình cảnh báo nhấp nháy chu kỳ 2s trên chân D22 (PIN_LED_ALERT = GPIO 22)
+// Cấu hình cảnh báo nhấp nháy chu kỳ 2s trên Đèn LED 3 (PIN_LED_ALERT = GPIO 21)
 int lightAlertThreshold = 600;        // Ngưỡng ánh sáng X (mặc định 600 Lux, đồng bộ từ Web)
 bool isLightAlerting = false;         // Cờ báo vượt ngưỡng
 unsigned long lastBlinkTime = 0;      // Mốc thời gian chớp tắt LED
@@ -58,7 +58,7 @@ void setupWiFi() {
     Serial.print("📍 Địa chỉ IP ESP32: ");
     Serial.println(WiFi.localIP());
     digitalWrite(PIN_LED_STATUS, LOW);
-    digitalWrite(PIN_LED_ALERT, LOW); // Mặc định TẮT đèn cảnh báo chân D22
+    digitalWrite(PIN_LED_ALERT, LOW); // Mặc định TẮT đèn cảnh báo (LED 3 chân GPIO 21)
   } else {
     Serial.println("\n⚠️ Không thể kết nối WiFi. Hãy kiểm tra lại SSID/Password/2.4GHz.");
     WiFi.disconnect(true);
@@ -99,7 +99,7 @@ void onMqttCallback(char* topic, byte* payload, unsigned int length) {
 
   Serial.printf("⚡ Lệnh nhận: RequestId=%s, Device=%s, Action=%s\n", requestId ? requestId : "N/A", deviceCode, action);
 
-  // Tìm kiếm thiết bị trong bảng cấu hình Relay
+  // Tìm kiếm thiết bị trong bảng cấu hình Relay (Đèn 1, Đèn 2)
   bool found = false;
   for (int i = 0; i < NUM_DEVICES; i++) {
     if (strcmp(DEVICES[i].deviceCode, deviceCode) == 0) {
@@ -169,14 +169,15 @@ void reconnectMQTT() {
 void setup() {
   Serial.begin(115200);
 
-  // Cấu hình chân LED trạng thái (D2) và LED cảnh báo (D22)
+  // Cấu hình chân LED trạng thái (D2)
   pinMode(PIN_LED_STATUS, OUTPUT);
   digitalWrite(PIN_LED_STATUS, LOW);
 
+  // Cấu hình chân LED Cảnh báo (LED 3 ở chân GPIO 21)
   pinMode(PIN_LED_ALERT, OUTPUT);
-  digitalWrite(PIN_LED_ALERT, LOW); // Mặc định ban đầu TẮT đèn cảnh báo chân D22
+  digitalWrite(PIN_LED_ALERT, LOW); // Mặc định ban đầu TẮT đèn cảnh báo
 
-  // Khởi tạo chân GPIO cho 3 Relay điều khiển (18, 19, 21)
+  // Khởi tạo chân GPIO cho các Relay đèn điều khiển (Đèn 1 GPIO 18, Đèn 2 GPIO 19)
   for (int i = 0; i < NUM_DEVICES; i++) {
     pinMode(DEVICES[i].pin, OUTPUT);
     digitalWrite(DEVICES[i].pin, DEVICES[i].activeLow ? HIGH : LOW);
@@ -207,7 +208,7 @@ void loop() {
 
   unsigned long now = millis();
 
-  // ĐỀ 1: Khi ánh sáng vượt ngưỡng X -> Nhấp nháy LED cảnh báo chân D22 liên tục chu kỳ 2s (1s BẬT / 1s TẮT)
+  // ĐỀ 1: Khi ánh sáng vượt ngưỡng X -> Nhấp nháy LED cảnh báo (GPIO 21) liên tục chu kỳ 2s (1s BẬT / 1s TẮT)
   if (isLightAlerting) {
     if (now - lastBlinkTime >= 1000) { // Cứ 1000ms đổi trạng thái 1 lần = chu kỳ 2s (1000ms ON / 1000ms OFF)
       lastBlinkTime = now;
@@ -215,7 +216,7 @@ void loop() {
       digitalWrite(PIN_LED_ALERT, alertLedState ? HIGH : LOW);
     }
   } else {
-    // Khi KHÔNG cảnh báo (ánh sáng <= ngưỡng X) -> TẮT HẲN đèn cảnh báo chân D22
+    // Khi KHÔNG cảnh báo (ánh sáng <= ngưỡng X) -> TẮT HẲN đèn cảnh báo GPIO 21
     if (alertLedState || digitalRead(PIN_LED_ALERT) == HIGH) {
       alertLedState = false;
       digitalWrite(PIN_LED_ALERT, LOW);
@@ -243,12 +244,12 @@ void loop() {
     if (prevAlerting && !isLightAlerting) {
       alertLedState = false;
       digitalWrite(PIN_LED_ALERT, LOW);
-      Serial.println("☀️ Ánh sáng đã về mức an toàn -> TẮT LED cảnh báo D22");
+      Serial.printf("☀️ Ánh sáng %d Lux <= Ngưỡng %d Lux -> TẮT LED cảnh báo (GPIO 21)\n", lightLux, lightAlertThreshold);
     } else if (!prevAlerting && isLightAlerting) {
       lastBlinkTime = now;
       alertLedState = true;
       digitalWrite(PIN_LED_ALERT, HIGH);
-      Serial.println("🚨 Ánh sáng vượt ngưỡng -> BẬT chế độ nhấp nháy 2s LED D22");
+      Serial.printf("🚨 Ánh sáng %d Lux > Ngưỡng %d Lux -> BẬT chế độ nhấp nháy 2s LED cảnh báo (GPIO 21)\n", lightLux, lightAlertThreshold);
     }
 
     // Kiểm tra tính hợp lệ của số liệu DHT22
