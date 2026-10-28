@@ -43,10 +43,12 @@ struct DeviceMapping {
 // - LAMP_01: Đèn LED 1 trên chân GPIO 18
 // - LAMP_02: Đèn LED 2 trên chân GPIO 19
 // - LAMP_03: Đèn LED 3 trên chân GPIO 21
+// - LAMP_04: Đèn LED 4 trên chân GPIO 22 (Đề 1)
 // - LED_ONBOARD: Đèn LED trên bo ESP32 (GPIO 2)
 const DeviceMapping DEVICES[] = {{"LAMP_01", 18, true, false},
                                  {"LAMP_02", 19, true, false},
                                  {"LAMP_03", 21, true, false},
+                                 {"LAMP_04", 22, true, false},
                                  {"LED_ONBOARD", 2, true, false}};
 
 const int NUM_DEVICES = sizeof(DEVICES) / sizeof(DEVICES[0]);

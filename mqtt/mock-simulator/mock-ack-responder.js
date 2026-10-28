@@ -16,6 +16,9 @@ const client = mqtt.connect(BROKER_URL, {
 // Trạng thái thiết bị giả lập trong bộ nhớ ESP32
 const mockHardwareState = {
   LAMP_01: 'OFF',
+  LAMP_02: 'OFF',
+  LAMP_03: 'OFF',
+  LAMP_04: 'OFF',
   FAN_01: 'OFF',
 };
 
