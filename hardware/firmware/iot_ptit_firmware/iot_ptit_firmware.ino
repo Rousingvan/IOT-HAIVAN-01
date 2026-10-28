@@ -24,7 +24,7 @@ PubSubClient mqttClient(espClient);
 unsigned long lastTelemetryTime = 0;
 const unsigned long TELEMETRY_INTERVAL = 2000; // Chu kỳ gửi dữ liệu cảm biến: 2 giây
 
-// Cấu hình cảnh báo nhấp nháy chu kỳ 2s trên Đèn LED 3 (PIN_LED_ALERT = GPIO 21)
+// Cấu hình cảnh báo nhấp nháy chu kỳ 2s trên Đèn Cảnh Báo (PIN_LED_ALERT = GPIO 21)
 int lightAlertThreshold = 600;        // Ngưỡng ánh sáng X (mặc định 600 Lux, đồng bộ từ Web)
 bool isLightAlerting = false;         // Cờ báo vượt ngưỡng
 unsigned long lastBlinkTime = 0;      // Mốc thời gian chớp tắt LED
@@ -58,7 +58,7 @@ void setupWiFi() {
     Serial.print("📍 Địa chỉ IP ESP32: ");
     Serial.println(WiFi.localIP());
     digitalWrite(PIN_LED_STATUS, LOW);
-    digitalWrite(PIN_LED_ALERT, LOW); // Mặc định TẮT đèn cảnh báo (LED 3 chân GPIO 21)
+    digitalWrite(PIN_LED_ALERT, LOW); // Mặc định TẮT đèn cảnh báo (GPIO 21)
   } else {
     Serial.println("\n⚠️ Không thể kết nối WiFi. Hãy kiểm tra lại SSID/Password/2.4GHz.");
     WiFi.disconnect(true);
@@ -99,7 +99,7 @@ void onMqttCallback(char* topic, byte* payload, unsigned int length) {
 
   Serial.printf("⚡ Lệnh nhận: RequestId=%s, Device=%s, Action=%s\n", requestId ? requestId : "N/A", deviceCode, action);
 
-  // Tìm kiếm thiết bị trong bảng cấu hình Relay (Đèn 1, Đèn 2)
+  // Tìm kiếm thiết bị trong bảng cấu hình Relay (Đèn 1: 18, Đèn 2: 19, Đèn 3: 22)
   bool found = false;
   for (int i = 0; i < NUM_DEVICES; i++) {
     if (strcmp(DEVICES[i].deviceCode, deviceCode) == 0) {
@@ -173,11 +173,11 @@ void setup() {
   pinMode(PIN_LED_STATUS, OUTPUT);
   digitalWrite(PIN_LED_STATUS, LOW);
 
-  // Cấu hình chân LED Cảnh báo (LED 3 ở chân GPIO 21)
+  // Cấu hình chân LED Cảnh báo (chân GPIO 21)
   pinMode(PIN_LED_ALERT, OUTPUT);
   digitalWrite(PIN_LED_ALERT, LOW); // Mặc định ban đầu TẮT đèn cảnh báo
 
-  // Khởi tạo chân GPIO cho các Relay đèn điều khiển (Đèn 1 GPIO 18, Đèn 2 GPIO 19)
+  // Khởi tạo chân GPIO cho các Relay đèn điều khiển (Đèn 1: 18, Đèn 2: 19, Đèn 3: 22)
   for (int i = 0; i < NUM_DEVICES; i++) {
     pinMode(DEVICES[i].pin, OUTPUT);
     digitalWrite(DEVICES[i].pin, DEVICES[i].activeLow ? HIGH : LOW);

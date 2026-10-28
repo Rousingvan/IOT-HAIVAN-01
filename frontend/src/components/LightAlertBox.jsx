@@ -219,7 +219,7 @@ export default function LightAlertBox({ currentLight = 0 }) {
                   flexWrap: 'wrap',
                 }}
               >
-                <span style={{ fontWeight: 500 }}>Trạng thái đèn (LED 3 - D21):</span>
+                <span style={{ fontWeight: 500 }}>Trạng thái đèn cảnh báo (D21):</span>
                 <strong style={{ fontWeight: 700 }}>
                   {isAlerting ? 'NHẤP NHÁY (Chu kỳ 2s)' : 'TẮT (AN TOÀN)'}
                 </strong>

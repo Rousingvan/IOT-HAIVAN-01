@@ -106,9 +106,9 @@ export const startMQTTService = (io) => {
 };
 
 export const sendDeviceCommand = async (deviceCode, deviceName, action) => {
-  // ĐỀ 1: Đèn 3 (LAMP_03 / P201_LAMP_03) đã được chuyển làm Đèn Cảnh Báo Ánh Sáng tự động
-  if (deviceCode === 'LAMP_03' || deviceCode === 'P201_LAMP_03' || deviceCode === 'ALERT_LED') {
-    throw new Error('Đèn 3 (chân GPIO 21) đang đóng vai trò Đèn Cảnh Báo Ánh Sáng tự động theo ngưỡng X, không điều khiển thủ công.');
+  // Đèn Cảnh Báo Ánh Sáng (chân 21) tự động nhấp nháy theo ngưỡng ánh sáng, không điều khiển thủ công
+  if (deviceCode === 'ALERT_LED') {
+    throw new Error('Đèn Cảnh Báo Ánh Sáng (chân GPIO 21) hoạt động tự động theo ngưỡng X, không điều khiển thủ công.');
   }
 
   if (!mqttClient || !mqttClient.connected) {

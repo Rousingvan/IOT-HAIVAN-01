@@ -495,7 +495,6 @@ export default function ActionHistoryPage() {
               >
                 <Option value="ALL">Tất cả</Option>
                 <Option value="LAMP">Đèn</Option>
-                <Option value="FAN">Quạt</Option>
                 <Option value="ALERT_LED">Đèn cảnh báo</Option>
               </Select>
             </Space>

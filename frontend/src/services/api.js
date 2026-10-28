@@ -58,7 +58,7 @@ let mockDevices = [
     device_type: 'LAMP',
     room: 'Phòng Thực Hành IoT 201 - Nhà A2',
     location: 'Đèn trần dãy giữa bàn 3-4',
-    pin_relay: 26,           // Nối với chân GPIO 26 trên ESP32
+    pin_relay: 18,           // Nối với chân GPIO 26 trên ESP32
     is_connected: true,      // Đã lắp phần cứng thực tế
     current_state: 'ON',     // Mặc định đang bật
     updated_at: new Date().toISOString(),
@@ -69,7 +69,7 @@ let mockDevices = [
     device_type: 'LAMP',
     room: 'Phòng Thực Hành IoT 201 - Nhà A2',
     location: 'Đèn trần góc bảng viết',
-    pin_relay: 25,           // Nối với chân GPIO 25 trên ESP32
+    pin_relay: 19,           // Nối với chân GPIO 25 trên ESP32
     is_connected: true,      // Đã lắp phần cứng thực tế
     current_state: 'OFF',    // Mặc định đang tắt
     updated_at: new Date().toISOString(),
@@ -80,36 +80,11 @@ let mockDevices = [
     device_type: 'LAMP',
     room: 'Phòng Thực Hành IoT 201 - Nhà A2',
     location: 'Đèn trần khu vực cửa chính',
-    pin_relay: 33,           // Nối với chân GPIO 33 trên ESP32
+    pin_relay: 22,           // Nối với chân GPIO 33 trên ESP32
     is_connected: true,      // Đã lắp phần cứng thực tế
     current_state: 'OFF',    // Mặc định đang tắt
     updated_at: new Date().toISOString(),
   },
-  /*
-  // Tạm thời comment thiết bị quạt phục vụ bài demo tập trung vào hệ thống đèn chiếu sáng
-  {
-    device_code: 'P201_FAN_01',
-    device_name: 'Quạt Làm Mát 01',
-    device_type: 'FAN',
-    room: 'Phòng Thực Hành IoT 201 - Nhà A2',
-    location: 'Quạt thông gió cửa sổ hướng Tây',
-    pin_relay: 27,
-    is_connected: false,     // Chưa kết nối (Module mở rộng)
-    current_state: 'OFF',
-    updated_at: new Date().toISOString(),
-  },
-  {
-    device_code: 'P201_FAN_02',
-    device_name: 'Quạt Làm Mát 02',
-    device_type: 'FAN',
-    room: 'Phòng Thực Hành IoT 201 - Nhà A2',
-    location: 'Quạt treo tường cửa ra vào',
-    pin_relay: 14,
-    is_connected: false,
-    current_state: 'OFF',
-    updated_at: new Date().toISOString(),
-  },
-  */
 ];
 
 /**

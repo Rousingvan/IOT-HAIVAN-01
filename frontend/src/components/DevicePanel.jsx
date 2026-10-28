@@ -41,15 +41,14 @@ export default function DevicePanel({ devices = [], onToggleDevice, loadingMap =
   // 3. State quản lý Modal thông báo thành công sau khi gạt công tắc
   const [successModal, setSuccessModal] = useState({ open: false, device: null, action: '' });
 
-  // 4. Danh sách hiển thị: Chỉ giữ các đèn bật/tắt thủ công (Đèn 1, Đèn 2). 
-  // Đèn 3 đã chuyển thành Đèn Cảnh Báo tự động theo ngưỡng ánh sáng (nhấp nháy 2s)
+  // 4. Danh sách hiển thị: 3 Đèn chiếu sáng điều khiển thủ công (Đèn 1: D18, Đèn 2: D19, Đèn 3: D22)
   const allDevices = useMemo(() => {
     return devices.filter(
       (d) =>
         d.device_code !== 'ALERT_LED' &&
         d.device_code !== 'P201_LAMP_04' &&
-        d.device_code !== 'P201_LAMP_03' &&
-        d.device_code !== 'LAMP_03'
+        d.device_type !== 'FAN' &&
+        !d.device_code?.includes('FAN')
     );
   }, [devices]);
 
@@ -67,20 +66,11 @@ export default function DevicePanel({ devices = [], onToggleDevice, loadingMap =
         <AlertOutlined style={{ fontSize: 24, color: '#6B7280' }} /> // Đèn cảnh báo tắt
       );
     }
-    // Nếu là Đèn (LAMP)
-    if (type === 'LAMP') {
-      return state === 'ON' ? (
-        <BulbFilled style={{ fontSize: 24, color: '#E05318' }} /> // Đèn sáng màu cam
-      ) : (
-        <BulbOutlined style={{ fontSize: 24, color: '#6B7280' }} /> // Đèn tắt màu xám viền
-      );
-    }
-    // Nếu là Quạt (FAN): Sử dụng spin={true} để quạt tự xoay tròn khi bật ON
-    return (
-      <SyncOutlined
-        spin={state === 'ON'} // Xoay 360 độ liên tục khi BẬT
-        style={{ fontSize: 24, color: state === 'ON' ? '#0891B2' : '#6B7280' }}
-      />
+    // Đèn Chiếu Sáng (LAMP)
+    return state === 'ON' ? (
+      <BulbFilled style={{ fontSize: 24, color: '#E05318' }} /> // Đèn sáng màu cam
+    ) : (
+      <BulbOutlined style={{ fontSize: 24, color: '#6B7280' }} /> // Đèn tắt màu xám viền
     );
   };
 
