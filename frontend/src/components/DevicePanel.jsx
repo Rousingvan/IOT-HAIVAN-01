@@ -162,11 +162,11 @@ export default function DevicePanel({ devices = [], onToggleDevice, loadingMap =
         )}
       </div>
 
-      {/* Danh sách tất cả các thiết bị (có thanh cuộn dọc nếu danh sách dài > 380px) */}
+      {/* Danh sách tất cả các thiết bị (hỗ trợ hiển thị đủ 4 đèn Đề 1) */}
       <div
         style={{
-          maxHeight: 380,
-          overflowY: 'auto', // Tự động bật scroll dọc khi vượt quá 380px
+          maxHeight: 460,
+          overflowY: 'auto', // Tự động bật scroll dọc khi vượt quá chiều cao
           paddingRight: 4,
           display: 'flex',
           flexDirection: 'column',
