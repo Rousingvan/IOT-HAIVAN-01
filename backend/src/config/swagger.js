@@ -300,7 +300,7 @@ export const swaggerSpec = {
             description: 'Mã thiết bị cần điều khiển (VD: P201_LAMP_01 hoặc LAMP_01)',
             schema: {
               type: 'string',
-              enum: ['P201_LAMP_01', 'LAMP_01', 'P201_LAMP_02', 'LAMP_02'],
+              enum: ['P201_LAMP_01', 'LAMP_01', 'P201_LAMP_02', 'LAMP_02', 'P201_LAMP_03', 'LAMP_03', 'P201_LAMP_04', 'LAMP_04'],
               example: 'P201_LAMP_01',
             },
           },
