@@ -52,7 +52,7 @@ export default function DevicePanel({ devices = [], onToggleDevice, loadingMap =
 
   // 4. Danh sách hiển thị: Tất cả các thiết bị trong hệ thống
   const allDevices = useMemo(() => {
-    return devices;
+    return devices.filter((d) => d.is_connected && d.device_type !== 'FAN' && !d.device_code?.includes('FAN'));
   }, [devices]);
 
   // 5. Hàm render Icon tương ứng cho từng loại thiết bị và trạng thái hoạt động
