@@ -157,13 +157,6 @@ export default function ActionHistoryPage() {
       render: (_, __, index) => (pagination.current - 1) * pagination.pageSize + index + 1,
     },
     {
-      title: 'Mã thao tác',
-      dataIndex: 'id',
-      key: 'id',
-      width: 120,
-      render: (id) => <Tag color="default" style={{ fontSize: 11 }}>{id}</Tag>,
-    },
-    {
       title: 'Người thực hiện',
       dataIndex: 'user_id',
       key: 'user_id',
