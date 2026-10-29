@@ -43,7 +43,7 @@ export const toggleDevice = async (req, res) => {
     const hardwareCode = device.device_code.replace(/^P\d+_/, '');
 
     // Gửi lệnh qua MQTT và chờ phản hồi ACK trong 5 giây
-    const result = await sendDeviceCommand(hardwareCode, device.device_name, action);
+    const result = await sendDeviceCommand(hardwareCode, device.device_name, action, device.device_code);
     return res.json(result);
   } catch (err) {
     return res.status(500).json({ message: err.message });

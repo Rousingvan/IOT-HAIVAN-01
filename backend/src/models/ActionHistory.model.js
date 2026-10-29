@@ -31,8 +31,8 @@ const actionHistorySchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['SUCCESS', 'TIMEOUT', 'FAILED'],
-      default: 'SUCCESS',
+      enum: ['LOADING', 'SUCCESS', 'TIMEOUT', 'FAILED'],
+      default: 'LOADING',
       index: true,
     },
     user_id: {

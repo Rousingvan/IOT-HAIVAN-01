@@ -14,7 +14,7 @@ const { Option } = Select;
  * 1. ID: Mã định danh bản ghi đo đạc
  * 2. Tên cảm biến: Tag (Nhiệt độ, Độ ẩm, Ánh sáng)
  * 3. Giá trị: Giá trị đo kèm đơn vị (Ví dụ: 322.6 Lux, 68.0 %, 29.8 °C)
- * 4. Thời gian: Định dạng HH:mm:ss DD/MM/YYYY
+ * 4. Thời gian: Định dạng Ngày trước Giờ sau: DD/MM/YYYY HH:mm:ss (VD: 29/10/2026 08:12:24)
  * 
  * BỘ LỌC ĐẶT CẠNH Ô TÌM KIẾM:
  * - Dropdown chọn: Tất cả / Thời gian / Nhiệt độ / Độ ẩm / Ánh sáng
@@ -78,7 +78,12 @@ export default function DataSensorPage() {
     const query = searchValue.trim().toLowerCase();
 
     rawData.forEach((item, itemIdx) => {
+      // Định dạng chuẩn Ngày trước Giờ sau: DD/MM/YYYY HH:mm:ss
       const formattedTime = item.measured_at
+        ? dayjs(item.measured_at).format('DD/MM/YYYY HH:mm:ss')
+        : '';
+      // Hỗ trợ khớp cả định dạng cũ HH:mm:ss DD/MM/YYYY nếu người dùng gõ tay
+      const legacyTime = item.measured_at
         ? dayjs(item.measured_at).format('HH:mm:ss DD/MM/YYYY')
         : '';
       const isoTime = item.measured_at ? item.measured_at.toLowerCase() : '';
@@ -133,7 +138,10 @@ export default function DataSensorPage() {
 
       // 2. KHI ĐÃ NHẬP GIÁ TRỊ VÀO Ô TÌM KIẾM:
       // Thực hiện lọc kết hợp theo cả Loại cảm biến (filterType) và Giá trị (query)
-      const matchTime = formattedTime.toLowerCase().includes(query) || isoTime.includes(query);
+      const matchTime =
+        formattedTime.toLowerCase().includes(query) ||
+        legacyTime.toLowerCase().includes(query) ||
+        isoTime.includes(query);
 
       const tempValStr = item.temperature !== undefined && item.temperature !== null ? `${item.temperature}` : '';
       const matchTempVal =
@@ -239,7 +247,7 @@ export default function DataSensorPage() {
       width: '38%',
       sorter: (a, b) => new Date(a.measured_at) - new Date(b.measured_at),
       render: (time, record) => {
-        const timeStr = record.formattedTime || (time ? dayjs(time).format('HH:mm:ss DD/MM/YYYY') : '');
+        const timeStr = record.formattedTime || (time ? dayjs(time).format('DD/MM/YYYY HH:mm:ss') : '');
         if (!timeStr) return '--';
         return (
           <Space size={6}>
@@ -326,8 +334,8 @@ export default function DataSensorPage() {
                   : filterType === 'LIGHT'
                   ? 'Nhập giá trị ánh sáng (VD: 300)...'
                   : filterType === 'TIME'
-                  ? 'Nhập thời gian tìm kiếm...'
-                  : 'Nhập giá trị tìm kiếm...'
+                  ? 'Nhập thời gian (VD: 29/10/2026 08:12:24)...'
+                  : 'Nhập giá trị tìm kiếm (VD: 29/10/2026 08:12:24)...'
               }
               value={searchValue}
               onChange={(e) => {

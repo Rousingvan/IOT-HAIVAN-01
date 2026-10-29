@@ -45,7 +45,7 @@ export const startMQTTService = (io) => {
   return mqttClient;
 };
 
-export const sendDeviceCommand = async (deviceCode, deviceName, action) => {
+export const sendDeviceCommand = async (deviceCode, deviceName, action, fullDeviceCode) => {
   if (!mqttClient || !mqttClient.connected) {
     throw new Error('MQTT Broker chưa kết nối. Không thể gửi lệnh tới phần cứng.');
   }
@@ -62,15 +62,17 @@ export const sendDeviceCommand = async (deviceCode, deviceName, action) => {
   mqttClient.publish(TOPICS.DEVICE_COMMAND, JSON.stringify(payload));
   console.log(`📤 Đã gửi MQTT command [${TOPICS.DEVICE_COMMAND}]:`, payload);
 
-  // Đăng ký chờ ACK phản hồi trong vòng 5s
+  // Đăng ký chờ ACK phản hồi trong vòng 5000ms
   return await ackService.registerCommand(
     requestId,
     {
       deviceCode,
+      fullDeviceCode: fullDeviceCode || deviceCode,
       deviceName,
       action,
       commandTime: new Date(),
     },
-    5000
+    5000,
+    socketIo
   );
 };

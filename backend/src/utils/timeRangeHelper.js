@@ -28,6 +28,13 @@ export const buildTimeStringQuery = (searchTime, fieldName = 'measured_at') => {
     regexPatterns.push(`${yyyy}-${mm}-${dd}${rest}`);
   }
 
+  // Nếu người dùng nhập dạng HH:mm:ss DD/MM/YYYY -> tự động đảo lại thành DD/MM/YYYY HH:mm:ss
+  const timeFirstMatch = raw.match(/^(\d{1,2}:\d{2}(?::\d{2})?)\s+(\d{2}\/\d{2}\/\d{4})$/);
+  if (timeFirstMatch) {
+    const [, timePart, datePart] = timeFirstMatch;
+    regexPatterns.push(`${datePart} ${timePart}`);
+  }
+
   // Escape ký tự đặc biệt cho regex và nối OR
   const escapedPatterns = regexPatterns
     .map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))

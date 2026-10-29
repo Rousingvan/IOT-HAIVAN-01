@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Typography, Select, Space, Tag, Row, Col, Tooltip, Button, message } from 'antd';
+import { Card, Table, Typography, Select, Space, Tag, Tooltip, Button, message } from 'antd';
 import {
   CheckCircleFilled,
   CloseCircleFilled,
-  ClockCircleFilled,
+  SyncOutlined,
   UserOutlined,
-  ThunderboltOutlined,
   CopyOutlined,
 } from '@ant-design/icons';
 import VariableTimeRangeFilter from '../components/VariableTimeRangeFilter';
 import { apiService } from '../services/api';
+import { getSocket } from '../services/socket';
 import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
@@ -20,22 +20,15 @@ const { Option } = Select;
  * TRANG: ActionHistoryPage (Lịch Sử Điều Khiển Thiết Bị)
  * CHỨC NĂNG CHÍNH:
  * - Lưu vết và giám sát toàn bộ lịch sử bật/tắt thiết bị của hệ thống IoT.
+ * - Khi người dùng bật/tắt thiết bị (kể cả khi rút mạch), bản ghi sẽ ở trạng thái
+ *   "Đang xử lý (Loading)" và chờ tối đa 5000ms. Nếu quá 5000ms không phản hồi
+ *   thì tự động chuyển sang "Thất bại" (FAILED).
  * - Lọc đa tiêu chí:
- *     1. Mốc thời gian linh hoạt (VariableTimeRangeFilter).
+ *     1. Mốc thời gian linh hoạt (VariableTimeRangeFilter - Ngày trước Giờ sau: DD/MM/YYYY HH:mm:ss).
  *     2. Lọc theo Loại Thiết bị
  *     3. Lọc theo Loại Hành động
- *     4. Lọc theo Trạng thái
+ *     4. Lọc theo Trạng thái (Thành công / Đang xử lý / Thất bại)
  *     5. Lọc theo Tài khoản User
- * - Bảng Table chi tiết gồm 9 cột:
- *     1. STT: Số thứ tự bản ghi.
- *     2. Mã thao tác: Mã ID lần gửi lệnh.
- *     3. Tài khoản User: Tài khoản User đã phát lệnh (admin / student...).
- *     4. Thiết bị: Tên thiết bị + Mã định danh (VD: Đèn 1 - P201_LAMP_01).
- *     5. Loại Hành động: Tag BẬT (cam) hoặc TẮT (xám).
- *     6. Thời gian gửi: Mốc thời gian gửi lệnh xuống MQTT.
- *     7. Thời gian nhận phản hồi: Mốc thời gian ESP32 gửi gói tin xác nhận (ACK).
- *     8. Độ trễ (Latency): Thời gian phản hồi tính bằng mili-giây (ms).
- *     9. Trạng thái: Tag Thành công (xanh), Timeout quá hạn 5s (vàng), Thất bại (đỏ).
  * ==============================================================================
  */
 export default function ActionHistoryPage() {
@@ -46,7 +39,7 @@ export default function ActionHistoryPage() {
   // 2. State các bộ lọc
   const [deviceType, setDeviceType] = useState('ALL');       // Lọc theo Loại thiết bị (LAMP / FAN)
   const [actionFilter, setActionFilter] = useState('ALL');   // Lọc theo Hành động (ON / OFF)
-  const [statusFilter, setStatusFilter] = useState('ALL');   // Lọc theo Trạng thái (SUCCESS / TIMEOUT / FAILED)
+  const [statusFilter, setStatusFilter] = useState('ALL');   // Lọc theo Trạng thái (SUCCESS / LOADING / FAILED)
   const [userFilter, setUserFilter] = useState('ALL');       // Lọc theo Người thực hiện (admin / student)
 
   // 3. State lưu tham số tìm kiếm thời gian
@@ -56,8 +49,8 @@ export default function ActionHistoryPage() {
   const [pagination, setPagination] = useState({ current: 1, pageSize: 5, total: 0 });
 
   // Hàm gọi API lấy dữ liệu lịch sử từ Backend
-  const fetchData = async (params = {}) => {
-    setLoading(true);
+  const fetchData = async (params = {}, silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const res = await apiService.queryActionHistory({
         deviceType,
@@ -76,7 +69,7 @@ export default function ActionHistoryPage() {
     } catch (err) {
       console.error('Fetch action history error:', err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -84,6 +77,28 @@ export default function ActionHistoryPage() {
   useEffect(() => {
     fetchData({ page: 1 });
   }, [deviceType, actionFilter, statusFilter, userFilter, filterParams]);
+
+  // Lắng nghe sự kiện Socket.io khi có lệnh mới (LOADING) hoặc cập nhật (SUCCESS / FAILED sau 5000ms)
+  useEffect(() => {
+    const socket = getSocket();
+    const handleHistoryUpdate = () => {
+      fetchData({ page: pagination.current, pageSize: pagination.pageSize }, true);
+    };
+    socket.on('action_history_updated', handleHistoryUpdate);
+    return () => {
+      socket.off('action_history_updated', handleHistoryUpdate);
+    };
+  }, [deviceType, actionFilter, statusFilter, userFilter, filterParams, pagination.current, pagination.pageSize]);
+
+  // Tự động kiểm tra lại sau mỗi 1s nếu có bản ghi đang ở trạng thái LOADING
+  useEffect(() => {
+    const hasLoading = data.some((item) => item.status === 'LOADING');
+    if (!hasLoading) return;
+    const timer = setInterval(() => {
+      fetchData({ page: pagination.current, pageSize: pagination.pageSize }, true);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [data, pagination.current, pagination.pageSize]);
 
   // Handler khi bấm Lọc trên thanh tìm kiếm thời gian
   const handleFilter = (searchTime) => {
@@ -105,22 +120,23 @@ export default function ActionHistoryPage() {
     fetchData({ page: newPagination.current, pageSize: newPagination.pageSize });
   };
 
-  // Hàm render Tag trạng thái trực quan kèm icon tương ứng
+  // Hàm render Tag trạng thái trực quan kèm icon tương ứng (Xóa Quá hạn, Thêm Loading)
   const renderStatusTag = (status) => {
     switch (status) {
+      case 'LOADING':
+        return (
+          <Tag icon={<SyncOutlined spin />} color="processing">
+            Đang xử lý (Loading)
+          </Tag>
+        );
       case 'SUCCESS':
         return (
           <Tag icon={<CheckCircleFilled />} color="success">
             Thành công
           </Tag>
         );
-      case 'TIMEOUT':
-        return (
-          <Tag icon={<ClockCircleFilled />} color="warning">
-            Quá hạn 5s (Timeout)
-          </Tag>
-        );
       case 'FAILED':
+      case 'TIMEOUT':
         return (
           <Tag icon={<CloseCircleFilled />} color="error">
             Thất bại
@@ -131,7 +147,7 @@ export default function ActionHistoryPage() {
     }
   };
 
-  // Cấu hình 9 cột hiển thị của Ant Design Table
+  // Cấu hình các cột hiển thị của Ant Design Table
   const columns = [
     {
       title: 'STT',
@@ -222,11 +238,18 @@ export default function ActionHistoryPage() {
     {
       title: 'Độ trễ',
       key: 'latency',
-      width: 90,
+      width: 110,
       align: 'center',
       render: (_, record) => {
+        if (record.status === 'LOADING') {
+          return <span style={{ color: '#1677FF', fontWeight: 500 }}>Đang chờ...</span>;
+        }
+        if (record.status === 'FAILED' || record.status === 'TIMEOUT') {
+          const failLatency = record.latency_ms || 5000;
+          return <span style={{ color: '#CF1322', fontWeight: 600 }}>{failLatency} ms</span>;
+        }
         if (!record.command_time || !record.response_time) return '--';
-        const diff = new Date(record.response_time) - new Date(record.command_time);
+        const diff = record.latency_ms || (new Date(record.response_time) - new Date(record.command_time));
         return <span style={{ color: '#389E0D', fontWeight: 600 }}>{diff > 0 ? `${diff} ms` : '320 ms'}</span>;
       },
     },
@@ -234,7 +257,7 @@ export default function ActionHistoryPage() {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
-      width: 140,
+      width: 165,
       render: (status) => renderStatusTag(status),
     },
   ];
@@ -319,7 +342,7 @@ export default function ActionHistoryPage() {
               </Select>
             </Space>
 
-            {/* 3. Lọc Trạng thái (Thành công / Timeout / Thất bại) */}
+            {/* 3. Lọc Trạng thái (Thành công / Đang xử lý / Thất bại) */}
             <Space size="small">
               <Text strong style={{ fontSize: 13, color: '#374151' }}>
                 Trạng thái:
@@ -330,12 +353,12 @@ export default function ActionHistoryPage() {
                   setStatusFilter(val);
                   setPagination((prev) => ({ ...prev, current: 1 }));
                 }}
-                style={{ width: 150 }}
+                style={{ width: 175 }}
                 size="middle"
               >
                 <Option value="ALL">Tất cả</Option>
                 <Option value="SUCCESS">Thành công</Option>
-                <Option value="TIMEOUT">Quá hạn</Option>
+                <Option value="LOADING">Đang xử lý (Loading)</Option>
                 <Option value="FAILED">Thất bại</Option>
               </Select>
             </Space>
