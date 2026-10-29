@@ -6,6 +6,7 @@ import {
   ClockCircleFilled,
   UserOutlined,
   ThunderboltOutlined,
+  CopyOutlined,
 } from '@ant-design/icons';
 import VariableTimeRangeFilter from '../components/VariableTimeRangeFilter';
 import { apiService } from '../services/api';
