@@ -279,7 +279,7 @@ export const apiService = {
           github: 'https://github.com/Rousingvan/IOT-HAIVAN-01',
           figma: 'https://www.figma.com/design/L0E1y6JcOK4M4DQPgc4jud/IoT-B23DCAT332?node-id=0-1&t=8RONHZNqQErP8w67-1',
           swagger: 'http://localhost:5000/api-docs',
-          pdfReport: '/docs/bao_cao_btl_iot.pdf',
+          pdfReport: '/docs/Bao_cao_IOT_Luong_Hai_Van.pdf',
         },
       };
     }
@@ -337,39 +337,35 @@ export const apiService = {
    * @param {string} deviceCode - Mã định danh thiết bị (VD: P201_LAMP_01)
    * @param {string} action - Hành động điều khiển ('ON' hoặc 'OFF')
    */
+  /**
+   * Gửi lệnh bật/tắt thiết bị xuống ESP32
+   * @param {string} deviceCode - Mã định danh thiết bị (VD: P201_LAMP_01)
+   * @param {string} action - Hành động điều khiển ('ON' hoặc 'OFF')
+   */
   toggleDevice: async (deviceCode, action) => {
     try {
       const res = await apiClient.post(`/devices/${deviceCode}/toggle`, { action });
       return res.data;
-    } catch {
-      // Tìm thiết bị trong bộ nhớ client
+    } catch (err) {
+      // Nếu Backend trả về lỗi (Timeout hoặc không kết nối)
+      const errorMsg = err.response?.data?.message || err.message || 'Lỗi giao tiếp với thiết bị';
+      
+      // Ghi nhận bản ghi FAILED/TIMEOUT vào Mock ActionHistory nếu đang chạy Offline
       const dev = mockDevices.find((d) => d.device_code === deviceCode);
-      if (!dev) throw new Error('Không tìm thấy thiết bị');
-      // Chặn nếu thiết bị chưa được gắn phần cứng thực tế
-      if (!dev.is_connected) {
-        throw new Error('Thiết bị chưa được kết nối phần cứng. Không thể điều khiển.');
+      if (dev) {
+        mockActionHistory.unshift({
+          id: `ACT_${Date.now()}`,
+          device_code: dev.device_code,
+          device_name: dev.device_name,
+          action,
+          command_time: new Date().toISOString(),
+          response_time: new Date().toISOString(),
+          status: 'FAILED',
+        });
       }
 
-      // Cập nhật trạng thái tức thời
-      dev.current_state = action;
-      dev.updated_at = new Date().toISOString();
-
-      // Thêm ngay 1 bản ghi mới vào đầu danh sách lịch sử điều khiển
-      mockActionHistory.unshift({
-        id: `ACT_${Date.now()}`,
-        device_code: dev.device_code,
-        device_name: dev.device_name,
-        action,
-        command_time: new Date().toISOString(),
-        response_time: new Date(Date.now() + 320).toISOString(), // Giả lập độ trễ phản hồi ACK 320ms
-        status: 'SUCCESS',
-      });
-
-      return {
-        success: true,
-        device: dev,
-        message: `Điều khiển ${dev.device_name} (${dev.device_code}) ${action} thành công!`,
-      };
+      // Ném lỗi ra để giao diện Dashboard/DevicePanel bắt được và báo thất bại
+      throw new Error(errorMsg);
     }
   },
 

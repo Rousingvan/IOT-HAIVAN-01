@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Typography, Select, Space, Tag, Row, Col } from 'antd';
+import { Card, Table, Typography, Select, Space, Tag, Row, Col, Tooltip, Button, message } from 'antd';
 import {
   CheckCircleFilled,
   CloseCircleFilled,
@@ -195,7 +195,28 @@ export default function ActionHistoryPage() {
       title: 'Thời gian',
       dataIndex: 'command_time',
       key: 'command_time',
-      render: (time) => <span>{time ? dayjs(time).format('DD/MM/YYYY HH:mm:ss') : '--'}</span>,
+      render: (time) => {
+        const timeStr = time ? dayjs(time).format('DD/MM/YYYY HH:mm:ss') : '';
+        if (!timeStr) return '--';
+        return (
+          <Space size={6}>
+            <span>{timeStr}</span>
+            <Tooltip title="Sao chép mốc thời gian">
+              <Button
+                type="text"
+                size="small"
+                icon={<CopyOutlined style={{ color: '#E05318', fontSize: 13 }} />}
+                style={{ width: 22, height: 22, padding: 0 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigator.clipboard.writeText(timeStr);
+                  message.success('Đã sao chép: ' + timeStr);
+                }}
+              />
+            </Tooltip>
+          </Space>
+        );
+      },
     },
     {
       title: 'Độ trễ',

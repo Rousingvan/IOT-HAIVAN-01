@@ -10,7 +10,7 @@ export const getProfile = async (req, res) => {
       github: 'https://github.com/Rousingvan/IOT-HAIVAN-01',
       figma: 'https://www.figma.com/design/L0E1y6JcOK4M4DQPgc4jud/IoT-B23DCAT332?node-id=0-1&t=8RONHZNqQErP8w67-1',
       swagger: 'http://localhost:5000/api-docs',
-      pdfReport: 'IoT_B23DCAT332_Bao_cao_tot_nghiep.pdf',
+      pdfReport: '/docs/Bao_cao_IOT_Luong_Hai_Van.pdf',
     },
   });
 };

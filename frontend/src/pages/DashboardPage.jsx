@@ -120,6 +120,8 @@ export default function DashboardPage() {
         prev.map((d) => (d.device_code === deviceCode ? { ...d, current_state: action } : d))
       );
       return res;
+    } catch (err) {
+      throw err;
     } finally {
       setLoadingMap((prev) => ({ ...prev, [deviceCode]: false })); // Tắt loading
     }

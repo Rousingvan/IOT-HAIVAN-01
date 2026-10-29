@@ -15,19 +15,23 @@ export const ackService = {
         pendingCommands.delete(requestId);
 
         try {
-          // Ghi nhận lịch sử thất bại do Timeout
+          // Ghi nhận lịch sử thất bại do Timeout khi mất kết nối ESP32
+          const now = new Date();
+          const cmdTime = new Date(commandInfo.commandTime);
           await ActionHistory.create({
             device_code: commandInfo.deviceCode,
             device_name: commandInfo.deviceName,
             action: commandInfo.action,
-            command_time: commandInfo.commandTime,
-            status: 'TIMEOUT',
+            command_time: cmdTime,
+            response_time: now,
+            latency_ms: timeoutMs,
+            status: 'FAILED', // Ghi rõ thất bại
           });
         } catch (e) {
           console.warn('Lỗi ghi ActionHistory timeout:', e.message);
         }
 
-        reject(new Error(`Timeout: Không nhận được gói tin ACK từ ESP32 sau ${timeoutMs / 1000}s`));
+        reject(new Error(`Không thể kết nối tới mạch ESP32! Quá thời gian phản hồi (Timeout ${timeoutMs / 1000}s). Vui lòng kiểm tra nguồn điện hoặc kết nối mạng của ESP32.`));
       }, timeoutMs);
 
       pendingCommands.set(requestId, { resolve, reject, timer, commandInfo });

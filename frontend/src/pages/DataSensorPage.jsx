@@ -238,11 +238,32 @@ export default function DataSensorPage() {
       key: 'measured_at',
       width: '38%',
       sorter: (a, b) => new Date(a.measured_at) - new Date(b.measured_at),
-      render: (time, record) => (
-        <span style={{ color: '#1F2937', fontWeight: 500, fontSize: 13 }}>
-          {record.formattedTime || (time ? dayjs(time).format('HH:mm:ss DD/MM/YYYY') : '--')}
-        </span>
-      ),
+      render: (time, record) => {
+        const timeStr = record.formattedTime || (time ? dayjs(time).format('HH:mm:ss DD/MM/YYYY') : '');
+        if (!timeStr) return '--';
+        return (
+          <Space size={6}>
+            <span style={{ color: '#1F2937', fontWeight: 500, fontSize: 13 }}>
+              {timeStr}
+            </span>
+            <Tooltip title="Sao chép mốc thời gian & dán vào ô tìm kiếm">
+              <Button
+                type="text"
+                size="small"
+                icon={<CopyOutlined style={{ color: '#2F54EB', fontSize: 13 }} />}
+                style={{ width: 22, height: 22, padding: 0 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigator.clipboard.writeText(timeStr);
+                  setSearchValue(timeStr);
+                  setFilterType('TIME');
+                  message.success(`Đã sao chép & lọc mốc: ${timeStr}`);
+                }}
+              />
+            </Tooltip>
+          </Space>
+        );
+      },
     },
   ];
 

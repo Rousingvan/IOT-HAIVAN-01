@@ -107,8 +107,8 @@ export default function DevicePanel({ devices = [], onToggleDevice, loadingMap =
     } catch (err) {
       // Thông báo lỗi nếu sau 5s không nhận được gói tin xác nhận (ACK) từ ESP32
       notification.error({
-        message: 'Điều khiển thất bại / Timeout',
-        description: err.message || 'Không nhận được gói tin phản hồi (ACK) từ ESP32 sau 5s',
+        message: 'Kiểm tra kết nối thất bại / Mất kết nối ESP32',
+        description: err.message || 'Mạch ESP32 đã bị rút hoặc mất nguồn! Hệ thống không nhận được phản hồi (ACK) từ thiết bị. Trạng thái lệnh đã được ghi vào lịch sử là THẤT BẠI.',
       });
     }
   };
