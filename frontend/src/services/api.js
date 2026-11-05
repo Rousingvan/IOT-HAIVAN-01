@@ -491,4 +491,70 @@ export const apiService = {
       };
     }
   },
+
+  // ----------------------------------------------------------------------------
+  // NHÓM 6: 3 CẢM BIẾN NGẪU NHIÊN & LED CẢNH BÁO (ĐỀ 3)
+  // ----------------------------------------------------------------------------
+
+  /**
+   * Lấy số đo 3 cảm biến ngẫu nhiên mới nhất
+   */
+  getRandomSensorsLatest: async () => {
+    try {
+      const res = await apiClient.get('/random-sensors/latest');
+      return res.data;
+    } catch {
+      return {
+        s1: 5,
+        s2: 45,
+        s3: 450,
+        alert_s1: false,
+        alert_s2: false,
+        alert_s3: false,
+        mode: 'AUTO',
+        measured_at: new Date().toISOString(),
+      };
+    }
+  },
+
+  /**
+   * Lấy lịch sử đo gần nhất để vẽ biểu đồ
+   */
+  getRandomSensorsHistory: async (limit = 30) => {
+    try {
+      const res = await apiClient.get('/random-sensors/history', { params: { limit } });
+      return res.data;
+    } catch {
+      return [];
+    }
+  },
+
+  /**
+   * Tra cứu bảng lịch sử 3 cảm biến có lọc theo thời gian và phân trang
+   */
+  queryRandomSensorsData: async (params = {}) => {
+    try {
+      const res = await apiClient.get('/random-sensors', { params });
+      return res.data;
+    } catch {
+      return {
+        data: [],
+        total: 0,
+        page: params.page || 1,
+        pageSize: params.pageSize || 10,
+      };
+    }
+  },
+
+  /**
+   * Gửi lệnh kiểm thử thủ công giá trị cảm biến xuống ESP32
+   */
+  triggerRandomSensorsManualTest: async (body) => {
+    try {
+      const res = await apiClient.post('/random-sensors/manual-test', body);
+      return res.data;
+    } catch (err) {
+      throw new Error(err.response?.data?.message || err.message || 'Lỗi gửi lệnh kiểm thử thủ công');
+    }
+  },
 };

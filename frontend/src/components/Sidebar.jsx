@@ -8,6 +8,7 @@ import {
   UserOutlined,
   LogoutOutlined,
   HomeFilled,
+  ExperimentOutlined,
 } from '@ant-design/icons';
 
 const { Sider } = Layout;
@@ -62,6 +63,11 @@ export default function Sidebar() {
       key: '/dashboard',
       icon: <DashboardOutlined style={{ fontSize: 16 }} />,
       label: <Link to="/dashboard">Tổng quan</Link>,
+    },
+    {
+      key: '/random-sensors',
+      icon: <ExperimentOutlined style={{ fontSize: 16 }} />,
+      label: <Link to="/random-sensors">Cảm biến ngẫu nhiên</Link>,
     },
     {
       key: '/sensor-data',
