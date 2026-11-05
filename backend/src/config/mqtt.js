@@ -16,6 +16,8 @@ export const TOPICS = {
   DEVICE_COMMAND: 'esp32/device/command', // Backend gửi lệnh Bật/Tắt tới ESP32
   DEVICE_ACK: 'esp32/device/ack',     // ESP32 gửi gói tin xác nhận thực thi
   STATUS: 'esp32/status',             // Trạng thái sống (LWT / Online / Offline)
+  RANDOM_SENSORS: 'esp32/random-sensors',     // ESP32 gửi dữ liệu 3 cảm biến ngẫu nhiên (Đề 3)
+  RANDOM_SENSORS_SET: 'esp32/random-sensors/set', // Backend gửi lệnh test thủ công xuống ESP32
 };
 
 export const initMQTT = (onMessageReceived) => {
@@ -37,9 +39,9 @@ export const initMQTT = (onMessageReceived) => {
   client.on('connect', () => {
     console.log('✅ MQTT Client đã kết nối Broker thành công!');
     // Subscribe các topic cần lắng nghe
-    client.subscribe([TOPICS.TELEMETRY, TOPICS.DEVICE_ACK, TOPICS.STATUS], (err) => {
+    client.subscribe([TOPICS.TELEMETRY, TOPICS.DEVICE_ACK, TOPICS.STATUS, TOPICS.RANDOM_SENSORS], (err) => {
       if (err) console.error('❌ Lỗi subscribe MQTT topics:', err);
-      else console.log('📡 Đã subscribe 3 topic: Telemetry, Device ACK, Status.');
+      else console.log('📡 Đã subscribe các topic: Telemetry, Device ACK, Status, Random Sensors.');
     });
   });
 
