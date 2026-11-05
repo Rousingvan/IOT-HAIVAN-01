@@ -4,13 +4,15 @@ import {
   Col,
   Typography,
   Space,
-  Button,
+  Switch,
   Tag,
   message,
+  Card,
 } from 'antd';
 import { apiService } from '../services/api';
 import { getSocket } from '../services/socket';
-import IntegratedSensorCard from '../components/IntegratedSensorCard';
+import SensorDisplayCard from '../components/SensorDisplayCard';
+import SensorControlBox from '../components/SensorControlBox';
 
 const { Title, Text } = Typography;
 
@@ -70,8 +72,37 @@ export default function RandomSensorPage() {
     };
   }, []);
 
-  // 3. Xử lý gửi lệnh test thủ công từng cảm biến
+  // 3. Xử lý gạt công tắc chuyển đổi chế độ Manual / Auto
+  const handleToggleMode = async (checked) => {
+    const targetMode = checked ? 'MANUAL' : 'AUTO';
+    setActionLoading(true);
+    try {
+      const current = latestRef.current;
+      await apiService.triggerRandomSensorsManualTest({
+        mode: targetMode,
+        s1: current.s1,
+        s2: current.s2,
+        s3: current.s3,
+      });
+      setLatest((prev) => ({ ...prev, mode: targetMode }));
+      message.success(
+        checked
+          ? 'Đã BẬT Chế độ Thủ công (Manual). Bạn có thể chỉnh tay 3 box bên dưới.'
+          : 'Đã BẬT Chế độ Tự động (Auto). ESP32 tự sinh số ngẫu nhiên.'
+      );
+    } catch (err) {
+      message.error(err.message || 'Lỗi chuyển đổi chế độ');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // 4. Xử lý đặt giá trị chỉnh tay cho từng cảm biến
   const handleSetManual = async (sensorKey, val) => {
+    if (val === undefined || val === null) {
+      message.warning('Vui lòng nhập giá trị hợp lệ');
+      return;
+    }
     setActionLoading(true);
     try {
       const current = latestRef.current;
@@ -83,7 +114,7 @@ export default function RandomSensorPage() {
       };
 
       await apiService.triggerRandomSensorsManualTest(body);
-      message.success(`Đã gửi lệnh đặt ${sensorKey.toUpperCase()} = ${val} tới ESP32`);
+      message.success(`Đã cập nhật ${sensorKey.toUpperCase()} = ${val} tới ESP32`);
     } catch (err) {
       message.error(err.message || 'Lỗi gửi lệnh kiểm thử');
     } finally {
@@ -91,105 +122,147 @@ export default function RandomSensorPage() {
     }
   };
 
-  // 4. Xử lý đặt lại chế độ Random tự động
-  const handleResetAuto = async () => {
-    setActionLoading(true);
-    try {
-      await apiService.triggerRandomSensorsManualTest({ mode: 'AUTO' });
-      message.success('Đã khôi phục chế độ Random tự động trên ESP32');
-    } catch (err) {
-      message.error(err.message || 'Lỗi khôi phục tự động');
-    } finally {
-      setActionLoading(false);
-    }
-  };
+  const isManual = latest.mode === 'MANUAL';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* 1. Header Trang */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
-        <div>
-          <Title level={3} style={{ margin: 0, fontWeight: 700, color: '#111827', fontSize: 20 }}>
-            Giám sát 3 Cảm biến Ngẫu nhiên & LED Cảnh báo
-          </Title>
-          <Text type="secondary" style={{ fontSize: 13 }}>
-            Đề 3: Random phần cứng ESP32 (0–11, 0–101, 0–1001) | LED nháy 500ms khi &gt; 50% trên chân D25, D33, D32
+      {/* 1. Thanh tiêu đề & Công tắc bật/tắt chế độ Manual */}
+      <Card
+        style={{
+          borderRadius: 10,
+          background: '#ffffff',
+          border: '1px solid #e5e7eb',
+        }}
+        bodyStyle={{ padding: '16px 20px' }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14 }}>
+          <div>
+            <Title level={3} style={{ margin: 0, fontWeight: 700, color: '#111827', fontSize: 20 }}>
+              Giám sát 3 Cảm biến Ngẫu nhiên & LED Cảnh báo
+            </Title>
+            <Text type="secondary" style={{ fontSize: 13 }}>
+              Đề 3: Random phần cứng ESP32 (0–11, 0–101, 0–1001) | LED nháy 500ms khi &gt; 50% trên chân D25, D33, D32
+            </Text>
+          </div>
+
+          {/* Cụm công tắc Switch chuyển chế độ */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#f9fafb', padding: '8px 16px', borderRadius: 8, border: '1px solid #f3f4f6' }}>
+            <Text strong style={{ fontSize: 13, color: '#374151' }}>
+              Chế độ Manual (Chỉnh tay):
+            </Text>
+            <Switch
+              checked={isManual}
+              loading={actionLoading}
+              onChange={handleToggleMode}
+              checkedChildren="BẬT"
+              unCheckedChildren="TẮT"
+            />
+            <Tag color={isManual ? 'orange' : 'blue'} style={{ fontSize: 12, padding: '2px 8px', margin: 0 }}>
+              {isManual ? 'Thủ công (Manual)' : 'Tự động (Auto)'}
+            </Tag>
+          </div>
+        </div>
+      </Card>
+
+      {/* 2. HÀNG TRÊN: 3 Thẻ hiển thị giá trị cảm biến */}
+      <div>
+        <div style={{ marginBottom: 10 }}>
+          <Text strong style={{ fontSize: 14, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            Giá trị đo thời gian thực:
           </Text>
         </div>
+        <Row gutter={[16, 16]}>
+          <Col xs={24} md={8}>
+            <SensorDisplayCard
+              name="Cảm biến 1"
+              rangeLabel="Dải 0 – 11"
+              max={11}
+              threshold={5.5}
+              value={latest.s1}
+              isAlert={latest.alert_s1}
+            />
+          </Col>
 
-        <Space size="middle">
-          <Tag color={latest.mode === 'MANUAL' ? 'orange' : 'blue'} style={{ fontSize: 13, padding: '4px 12px' }}>
-            Chế độ: {latest.mode === 'MANUAL' ? 'Thủ công (Manual)' : 'Tự động (ESP32 Random)'}
-          </Tag>
-          {latest.mode === 'MANUAL' && (
-            <Button
-              type="primary"
-              onClick={handleResetAuto}
-              loading={actionLoading}
-              size="middle"
-            >
-              Khôi phục Random Tự động
-            </Button>
-          )}
-        </Space>
+          <Col xs={24} md={8}>
+            <SensorDisplayCard
+              name="Cảm biến 2"
+              rangeLabel="Dải 0 – 101"
+              max={101}
+              threshold={50.5}
+              value={latest.s2}
+              isAlert={latest.alert_s2}
+            />
+          </Col>
+
+          <Col xs={24} md={8}>
+            <SensorDisplayCard
+              name="Cảm biến 3"
+              rangeLabel="Dải 0 – 1001"
+              max={1001}
+              threshold={500.5}
+              value={latest.s3}
+              isAlert={latest.alert_s3}
+            />
+          </Col>
+        </Row>
       </div>
 
-      {/* 2. 3 Thẻ Cảm Biến Tích Hợp (Kèm Panel Kiểm Thử Ngay Dưới Mỗi Thẻ) */}
-      <Row gutter={[20, 20]}>
-        <Col xs={24} md={8}>
-          <IntegratedSensorCard
-            sensorKey="s1"
-            name="Cảm biến 1"
-            rangeLabel="Dải 0 – 11"
-            max={11}
-            threshold={5.5}
-            value={latest.s1}
-            isAlert={latest.alert_s1}
-            mode={latest.mode}
-            quickOverVal={8}
-            quickSafeVal={3}
-            onSetManual={handleSetManual}
-            onResetAuto={handleResetAuto}
-            loading={actionLoading}
-          />
-        </Col>
+      {/* 3. HÀNG DƯỚI: 3 Box chỉnh tay cho từng giá trị cảm biến */}
+      <div>
+        <div style={{ marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Text strong style={{ fontSize: 14, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            Bảng chỉnh tay giá trị (Manual Control):
+          </Text>
+          {!isManual && (
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              (Bật công tắc Manual phía trên để mở khóa các ô chỉnh tay này)
+            </Text>
+          )}
+        </div>
+        <Row gutter={[16, 16]}>
+          <Col xs={24} md={8}>
+            <SensorControlBox
+              sensorKey="s1"
+              name="Cảm biến 1"
+              max={11}
+              value={latest.s1}
+              isManualMode={isManual}
+              quickOverVal={8}
+              quickSafeVal={3}
+              onSetManual={handleSetManual}
+              loading={actionLoading}
+            />
+          </Col>
 
-        <Col xs={24} md={8}>
-          <IntegratedSensorCard
-            sensorKey="s2"
-            name="Cảm biến 2"
-            rangeLabel="Dải 0 – 101"
-            max={101}
-            threshold={50.5}
-            value={latest.s2}
-            isAlert={latest.alert_s2}
-            mode={latest.mode}
-            quickOverVal={75}
-            quickSafeVal={25}
-            onSetManual={handleSetManual}
-            onResetAuto={handleResetAuto}
-            loading={actionLoading}
-          />
-        </Col>
+          <Col xs={24} md={8}>
+            <SensorControlBox
+              sensorKey="s2"
+              name="Cảm biến 2"
+              max={101}
+              value={latest.s2}
+              isManualMode={isManual}
+              quickOverVal={75}
+              quickSafeVal={25}
+              onSetManual={handleSetManual}
+              loading={actionLoading}
+            />
+          </Col>
 
-        <Col xs={24} md={8}>
-          <IntegratedSensorCard
-            sensorKey="s3"
-            name="Cảm biến 3"
-            rangeLabel="Dải 0 – 1001"
-            max={1001}
-            threshold={500.5}
-            value={latest.s3}
-            isAlert={latest.alert_s3}
-            mode={latest.mode}
-            quickOverVal={800}
-            quickSafeVal={200}
-            onSetManual={handleSetManual}
-            onResetAuto={handleResetAuto}
-            loading={actionLoading}
-          />
-        </Col>
-      </Row>
+          <Col xs={24} md={8}>
+            <SensorControlBox
+              sensorKey="s3"
+              name="Cảm biến 3"
+              max={1001}
+              value={latest.s3}
+              isManualMode={isManual}
+              quickOverVal={800}
+              quickSafeVal={200}
+              onSetManual={handleSetManual}
+              loading={actionLoading}
+            />
+          </Col>
+        </Row>
+      </div>
     </div>
   );
 }
