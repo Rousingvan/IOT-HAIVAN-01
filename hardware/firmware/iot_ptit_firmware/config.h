@@ -22,6 +22,8 @@
 #define TOPIC_DEVICE_COMMAND "esp32/device/command"
 #define TOPIC_DEVICE_ACK "esp32/device/ack"
 #define TOPIC_STATUS "esp32/status"
+#define TOPIC_RANDOM_SENSORS "esp32/random-sensors"
+#define TOPIC_RANDOM_SENSORS_SET "esp32/random-sensors/set"
 
 // =========================================================================
 // 3. CẤU HÌNH CHÂN GPIO
@@ -30,6 +32,17 @@
 #define DHTTYPE DHT22
 #define PIN_LDR 34       // Chân Analog ADC1 cảm biến Quang trở Ánh sáng
 #define PIN_LED_STATUS 2 // LED onboard báo trạng thái kết nối
+
+// Chân 3 LED cảnh báo cho 3 cảm biến ngẫu nhiên (Đề 3)
+#define PIN_ALERT_S1 25  // LED cảnh báo Cảm biến 1 (0-11)
+#define PIN_ALERT_S2 26  // LED cảnh báo Cảm biến 2 (0-101)
+#define PIN_ALERT_S3 27  // LED cảnh báo Cảm biến 3 (0-1001)
+
+// Cấu hình dải đo & tốc độ nháy
+#define S1_MAX 11
+#define S2_MAX 101
+#define S3_MAX 1001
+#define ALERT_BLINK_MS 500 // Tốc độ nháy 500ms theo yêu cầu Đề 3
 
 // Định nghĩa mảng cấu hình thiết bị Relay (Kiến trúc mở rộng Plug-and-Play)
 struct DeviceMapping {
