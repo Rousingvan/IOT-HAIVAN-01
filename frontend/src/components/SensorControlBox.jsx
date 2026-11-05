@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Typography, Space, InputNumber, Button, Tag } from 'antd';
+import { Card, Typography, Space, InputNumber, Button } from 'antd';
 
 const { Text } = Typography;
 
 /**
- * Component Box Chỉnh Tay Giá Trị Cảm Biến (Hàng dưới - 3 Box)
- * - Có trạng thái Disable khi đang ở chế độ Tự Động (Auto)
- * - Cho phép nhập số cụ thể và bấm "Đặt số"
+ * Component Box Chỉnh Cảm Biến (Hàng dưới - 3 Box)
+ * - Đã bỏ chữ "tay" -> Chỉ hiện "Chỉnh cảm biến 1/2/3"
+ * - Đã bỏ tag "Cho phép chỉnh / Khóa"
+ * - Có trạng thái Disable khi ở chế độ Tự Động (Auto)
  */
 export default function SensorControlBox({
   sensorKey,
@@ -34,14 +35,11 @@ export default function SensorControlBox({
       }}
       bodyStyle={{ padding: '16px 18px' }}
     >
-      {/* 1. Tiêu đề box điều khiển */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+      {/* 1. Tiêu đề box điều khiển: "Chỉnh Cảm biến 1/2/3" (bỏ chữ "tay", bỏ tag "Cho phép chỉnh") */}
+      <div style={{ marginBottom: 12 }}>
         <Text strong style={{ fontSize: 14, color: isManualMode ? '#111827' : '#8c8c8c' }}>
-          Chỉnh tay {name}
+          Chỉnh {name}
         </Text>
-        <Tag color={isManualMode ? 'orange' : 'default'} style={{ fontSize: 11, margin: 0 }}>
-          {isManualMode ? 'Cho phép chỉnh' : 'Khóa (Tự động)'}
-        </Tag>
       </div>
 
       {/* 2. Ô nhập số + Nút áp dụng */}

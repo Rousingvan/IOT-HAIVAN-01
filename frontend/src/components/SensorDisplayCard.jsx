@@ -6,12 +6,13 @@ const { Text, Title } = Typography;
 /**
  * Component Thẻ Hiển Thị Giá Trị Cảm Biến (Hàng trên - 3 Box)
  * - Tự động nhấp nháy đỏ khi vượt ngưỡng > 50%
+ * - Nhãn cảnh báo gọn: chỉ hiện "CẢNH BÁO" (không kèm phần trăm bên cạnh)
+ * - Đã bỏ hiển thị ngưỡng ở dòng cuối
  */
 export default function SensorDisplayCard({
   name,
   rangeLabel,
   max,
-  threshold,
   value = 0,
   isAlert = false,
 }) {
@@ -29,22 +30,24 @@ export default function SensorDisplayCard({
       }}
       bodyStyle={{ padding: '18px 20px' }}
     >
-      {/* 1. Header: Tên + Dải đo + Trạng thái */}
+      {/* 1. Header: Tên + Dải đo + Trạng thái (chỉ hiện CẢNH BÁO, không kèm %) */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Text strong style={{ fontSize: 16, color: '#111827' }}>
             {name}
           </Text>
-          <Tag style={{ fontSize: 12, borderRadius: 4 }}>
-            {rangeLabel}
-          </Tag>
+          {rangeLabel && (
+            <Tag style={{ fontSize: 12, borderRadius: 4 }}>
+              {rangeLabel}
+            </Tag>
+          )}
         </div>
         {isAlert ? (
-          <Tag color="error" style={{ fontWeight: 600, fontSize: 12, padding: '2px 8px' }}>
-            CẢNH BÁO ({percent}%)
+          <Tag color="error" style={{ fontWeight: 600, fontSize: 12, padding: '2px 10px' }}>
+            CẢNH BÁO
           </Tag>
         ) : (
-          <Tag color="success" style={{ fontSize: 12, padding: '2px 8px' }}>
+          <Tag color="success" style={{ fontSize: 12, padding: '2px 10px' }}>
             Bình thường
           </Tag>
         )}
@@ -72,12 +75,10 @@ export default function SensorDisplayCard({
         size={['100%', 8]}
       />
 
+      {/* 4. Dòng cuối: Chỉ hiện Tối thiểu và Tối đa (Đã bỏ dòng ngưỡng 50%) */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
         <Text type="secondary" style={{ fontSize: 11 }}>
           Tối thiểu: 0
-        </Text>
-        <Text type="secondary" style={{ fontSize: 11, color: isAlert ? '#cf1322' : '#6b7280', fontWeight: isAlert ? 600 : 400 }}>
-          Ngưỡng 50%: &gt; {threshold}
         </Text>
         <Text type="secondary" style={{ fontSize: 11 }}>
           Tối đa: {max}

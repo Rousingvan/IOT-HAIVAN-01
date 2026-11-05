@@ -148,7 +148,7 @@ export default function RandomSensorPage() {
           {/* Cụm công tắc Switch chuyển chế độ */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#f9fafb', padding: '8px 16px', borderRadius: 8, border: '1px solid #f3f4f6' }}>
             <Text strong style={{ fontSize: 13, color: '#374151' }}>
-              Chế độ Manual (Chỉnh tay):
+              Chế độ Manual:
             </Text>
             <Switch
               checked={isManual}
@@ -157,9 +157,9 @@ export default function RandomSensorPage() {
               checkedChildren="BẬT"
               unCheckedChildren="TẮT"
             />
-            <Tag color={isManual ? 'orange' : 'blue'} style={{ fontSize: 12, padding: '2px 8px', margin: 0 }}>
-              {isManual ? 'Thủ công (Manual)' : 'Tự động (Auto)'}
-            </Tag>
+            {/* <Tag color={isManual ? 'orange' : 'blue'} style={{ fontSize: 12, padding: '2px 8px', margin: 0 }}>
+              {isManual ? 'Thủ công' : 'Tự động'}
+            </Tag> */}
           </div>
         </div>
       </Card>
@@ -175,7 +175,7 @@ export default function RandomSensorPage() {
           <Col xs={24} md={8}>
             <SensorDisplayCard
               name="Cảm biến 1"
-              rangeLabel="Dải 0 – 11"
+              // rangeLabel="Dải 0 – 11"
               max={11}
               threshold={5.5}
               value={latest.s1}
@@ -186,7 +186,7 @@ export default function RandomSensorPage() {
           <Col xs={24} md={8}>
             <SensorDisplayCard
               name="Cảm biến 2"
-              rangeLabel="Dải 0 – 101"
+              // rangeLabel="Dải 0 – 101"
               max={101}
               threshold={50.5}
               value={latest.s2}
@@ -197,7 +197,7 @@ export default function RandomSensorPage() {
           <Col xs={24} md={8}>
             <SensorDisplayCard
               name="Cảm biến 3"
-              rangeLabel="Dải 0 – 1001"
+              // rangeLabel="Dải 0 – 1001"
               max={1001}
               threshold={500.5}
               value={latest.s3}
@@ -207,15 +207,15 @@ export default function RandomSensorPage() {
         </Row>
       </div>
 
-      {/* 3. HÀNG DƯỚI: 3 Box chỉnh tay cho từng giá trị cảm biến */}
+      {/* 3. HÀNG DƯỚI: 3 Box chỉnh cho từng cảm biến */}
       <div>
         <div style={{ marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
           <Text strong style={{ fontSize: 14, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            Bảng chỉnh tay giá trị (Manual Control):
+            Bảng chỉnh giá trị:
           </Text>
           {!isManual && (
             <Text type="secondary" style={{ fontSize: 12 }}>
-              (Bật công tắc Manual phía trên để mở khóa các ô chỉnh tay này)
+              (Bật công tắc Manual phía trên để mở khóa các ô chỉnh cảm biến)
             </Text>
           )}
         </div>
