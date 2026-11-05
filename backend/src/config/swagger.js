@@ -26,6 +26,7 @@ export const swaggerSpec = {
     { name: '03_Sensor_Data_Search', description: 'UC03: Tra cứu & Lọc Dữ liệu Cảm biến Chuỗi Thời gian' },
     { name: '04_Device_Control', description: 'UC04: Điều khiển Thiết bị & Phản hồi ACK từ Phần cứng ESP32' },
     { name: '05_Action_History', description: 'UC05: Tra cứu & Lọc Lịch sử Bật/Tắt Thiết bị' },
+    { name: '06_Random_Sensors', description: 'UC06: 3 Cảm Biến Ngẫu Nhiên & 3 LED Cảnh Báo (Đề 3)' },
   ],
   paths: {
     '/api/auth/register': {
@@ -402,6 +403,90 @@ export const swaggerSpec = {
               },
             },
           },
+        },
+      },
+    },
+    '/api/random-sensors/latest': {
+      get: {
+        tags: ['06_Random_Sensors'],
+        summary: 'Lấy số đo 3 cảm biến ngẫu nhiên mới nhất',
+        responses: {
+          200: {
+            description: 'Bản ghi cảm biến mới nhất kèm cờ cảnh báo',
+          },
+        },
+      },
+    },
+    '/api/random-sensors/history': {
+      get: {
+        tags: ['06_Random_Sensors'],
+        summary: 'Lấy danh sách điểm đo gần nhất để vẽ biểu đồ',
+        parameters: [
+          {
+            name: 'limit',
+            in: 'query',
+            description: 'Số điểm đo cần lấy (mặc định 30)',
+            schema: { type: 'integer', default: 30 },
+          },
+        ],
+        responses: {
+          200: {
+            description: 'Mảng điểm đo sắp xếp tăng dần theo thời gian',
+          },
+        },
+      },
+    },
+    '/api/random-sensors': {
+      get: {
+        tags: ['06_Random_Sensors'],
+        summary: 'Tra cứu bảng lịch sử 3 cảm biến ngẫu nhiên có phân trang và lọc thời gian',
+        parameters: [
+          {
+            name: 'searchTime',
+            in: 'query',
+            description: 'Chuỗi tìm kiếm thời gian (VD: 05/11/2026 hoặc 08:00:00)',
+            schema: { type: 'string' },
+          },
+          {
+            name: 'page',
+            in: 'query',
+            schema: { type: 'integer', default: 1 },
+          },
+          {
+            name: 'pageSize',
+            in: 'query',
+            schema: { type: 'integer', default: 10 },
+          },
+        ],
+        responses: {
+          200: {
+            description: 'Danh sách bản ghi có phân trang',
+          },
+        },
+      },
+    },
+    '/api/random-sensors/manual-test': {
+      post: {
+        tags: ['06_Random_Sensors'],
+        summary: 'Gửi giá trị kiểm thử thủ công xuống ESP32',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  mode: { type: 'string', enum: ['AUTO', 'MANUAL'], example: 'MANUAL' },
+                  s1: { type: 'integer', example: 8 },
+                  s2: { type: 'integer', example: 75 },
+                  s3: { type: 'integer', example: 800 },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: 'Đã gửi lệnh kiểm thử tới ESP32' },
         },
       },
     },

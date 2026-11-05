@@ -5,6 +5,12 @@ import { getLatestSensorData, getSensorHistory } from '../controllers/sensor.con
 import { querySensorData } from '../controllers/sensorData.controller.js';
 import { getDevices, toggleDevice } from '../controllers/device.controller.js';
 import { queryActionHistory } from '../controllers/actionHistory.controller.js';
+import {
+  getLatestRandomSensorData,
+  getRandomSensorHistory,
+  queryRandomSensorData,
+  triggerManualTest,
+} from '../controllers/randomSensor.controller.js';
 
 const router = Router();
 
@@ -26,5 +32,11 @@ router.post('/devices/:deviceCode/toggle', toggleDevice);
 
 // UC05: Search Action History with Time Range Filter (timestamp.md)
 router.get('/action-history', queryActionHistory);
+
+// UC06: 3 Random Sensors & Alerts (Đề 3)
+router.get('/random-sensors/latest', getLatestRandomSensorData);
+router.get('/random-sensors/history', getRandomSensorHistory);
+router.get('/random-sensors', queryRandomSensorData);
+router.post('/random-sensors/manual-test', triggerManualTest);
 
 export default router;
