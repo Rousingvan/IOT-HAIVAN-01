@@ -10,25 +10,22 @@ const { Option } = Select;
 /**
  * ==============================================================================
  * TRANG: DataSensorPage (Tra Cứu Dữ Liệu Cảm Biến)
- * BẢNG DỮ LIỆU ĐÃ ĐƯỢC CHUẨN HÓA THEO MẪU:
- * 1. ID: Mã định danh bản ghi đo đạc
- * 2. Tên cảm biến: Tag (Nhiệt độ, Độ ẩm, Ánh sáng)
- * 3. Giá trị: Giá trị đo kèm đơn vị (Ví dụ: 322.6 Lux, 68.0 %, 29.8 °C)
- * 4. Thời gian: Định dạng Ngày trước Giờ sau: DD/MM/YYYY HH:mm:ss (VD: 29/10/2026 08:12:24)
- * 
- * BỘ LỌC ĐẶT CẠNH Ô TÌM KIẾM:
- * - Dropdown chọn: Tất cả / Thời gian / Nhiệt độ / Độ ẩm / Ánh sáng
- * - Ô nhập: "Nhập giá trị tìm kiếm..."
- * - Nút "Làm mới" với icon reload
+ * BẢNG DỮ LIỆU ĐÃ ĐƯỢC CHUẨN HÓA VÀ BỔ SUNG CẢ 3 CẢM BIẾN MỚI TỪ DATABASE:
+ * 1. Nhiệt độ (°C)
+ * 2. Độ ẩm (%)
+ * 3. Ánh sáng (Lux)
+ * 4. Cảm biến 1 (0–11)
+ * 5. Cảm biến 2 (0–101)
+ * 6. Cảm biến 3 (0–1001)
  * ==============================================================================
  */
 
 export default function DataSensorPage() {
-  // State mảng dữ liệu gốc từ Backend
+  // State mảng dữ liệu gốc từ Backend (SensorData + RandomSensorData)
   const [rawData, setRawData] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // State bộ lọc (Tất cả / Thời gian / Nhiệt độ / Độ ẩm / Ánh sáng)
+  // State bộ lọc (Tất cả / Thời gian / Nhiệt độ / Độ ẩm / Ánh sáng / CB1 / CB2 / CB3)
   const [filterType, setFilterType] = useState('ALL');
 
   // State chuỗi tìm kiếm
@@ -37,7 +34,7 @@ export default function DataSensorPage() {
   // State quản lý phân trang
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
 
-  // Hàm gọi API lấy dữ liệu từ Backend
+  // Hàm gọi API lấy dữ liệu song song từ cả SensorData và RandomSensorData trong MongoDB
   const fetchData = async (params = {}) => {
     setLoading(true);
     try {
@@ -45,8 +42,29 @@ export default function DataSensorPage() {
       if (filterType === 'TIME' && searchValue.trim()) {
         apiParams.searchTime = searchValue.trim();
       }
-      const res = await apiService.querySensorData(apiParams);
-      setRawData(res.data || []);
+
+      // Gọi đồng thời 2 nguồn dữ liệu trong CSDL MongoDB
+      const [resSensor, resRandom] = await Promise.all([
+        apiService.querySensorData({ ...apiParams, pageSize: 50 }),
+        apiService.queryRandomSensorsData({ ...apiParams, pageSize: 50 }),
+      ]);
+
+      const sensorList = (resSensor.data || []).map((item) => ({
+        ...item,
+        _type: 'ENVIRONMENT',
+      }));
+
+      const randomList = (resRandom.data || []).map((item) => ({
+        ...item,
+        _type: 'RANDOM',
+      }));
+
+      // Hợp nhất 2 danh sách và sắp xếp giảm dần theo thời gian đo
+      const combined = [...sensorList, ...randomList].sort((a, b) => {
+        return new Date(b.measured_at || 0) - new Date(a.measured_at || 0);
+      });
+
+      setRawData(combined);
     } catch (err) {
       console.error('Fetch sensor data error:', err);
     } finally {
@@ -78,109 +96,170 @@ export default function DataSensorPage() {
     const query = searchValue.trim().toLowerCase();
 
     rawData.forEach((item, itemIdx) => {
-      // Định dạng chuẩn Ngày trước Giờ sau: DD/MM/YYYY HH:mm:ss
       const formattedTime = item.measured_at
         ? dayjs(item.measured_at).format('DD/MM/YYYY HH:mm:ss')
         : '';
-      // Hỗ trợ khớp cả định dạng cũ HH:mm:ss DD/MM/YYYY nếu người dùng gõ tay
       const legacyTime = item.measured_at
         ? dayjs(item.measured_at).format('HH:mm:ss DD/MM/YYYY')
         : '';
       const isoTime = item.measured_at ? item.measured_at.toLowerCase() : '';
 
-      // Khởi tạo đối tượng từng dòng cảm biến
-      const lightRow = {
-        key: `${item.id || itemIdx}_LIGHT`,
-        rawId: item.id,
-        sensorType: 'LIGHT',
-        sensorName: 'Ánh sáng',
-        value: item.light,
-        unit: 'Lux',
-        color: '#D97706',
-        tagColor: 'gold',
-        measured_at: item.measured_at,
-        formattedTime,
-      };
-
-      const humidRow = {
-        key: `${item.id || itemIdx}_HUMID`,
-        rawId: item.id,
-        sensorType: 'HUMID',
-        sensorName: 'Độ ẩm',
-        value: item.humidity,
-        unit: '%',
-        color: '#0284C7',
-        tagColor: 'blue',
-        measured_at: item.measured_at,
-        formattedTime,
-      };
-
-      const tempRow = {
-        key: `${item.id || itemIdx}_TEMP`,
-        rawId: item.id,
-        sensorType: 'TEMP',
-        sensorName: 'Nhiệt độ',
-        value: item.temperature,
-        unit: '°C',
-        color: '#E05318',
-        tagColor: 'orange',
-        measured_at: item.measured_at,
-        formattedTime,
-      };
-
-      // 1. KHI CHƯA NHẬP GIÁ TRỊ TÌM KIẾM (query rỗng):
-      // Dù dropdown đang chọn loại nào (Nhiệt độ, Độ ẩm, Ánh sáng, Thời gian),
-      // dữ liệu CHƯA BỊ LỌC NGAY, hiển thị đầy đủ tất cả các dòng cảm biến.
-      if (!query) {
-        rows.push(lightRow, humidRow, tempRow);
-        return;
-      }
-
-      // 2. KHI ĐÃ NHẬP GIÁ TRỊ VÀO Ô TÌM KIẾM:
-      // Thực hiện lọc kết hợp theo cả Loại cảm biến (filterType) và Giá trị (query)
       const matchTime =
         formattedTime.toLowerCase().includes(query) ||
         legacyTime.toLowerCase().includes(query) ||
         isoTime.includes(query);
 
-      const tempValStr = item.temperature !== undefined && item.temperature !== null ? `${item.temperature}` : '';
-      const matchTempVal =
-        tempValStr.includes(query) ||
-        `${tempValStr} °c`.toLowerCase().includes(query) ||
-        `${tempValStr}°c`.toLowerCase().includes(query) ||
-        `${tempValStr} c`.toLowerCase().includes(query);
+      // 1. Nếu bản ghi chứa dữ liệu Môi trường (Nhiệt độ, Độ ẩm, Ánh sáng)
+      if (item._type === 'ENVIRONMENT' || item.temperature !== undefined) {
+        const lightRow = {
+          key: `${item.id || itemIdx}_LIGHT`,
+          rawId: item.id,
+          sensorType: 'LIGHT',
+          sensorName: 'Ánh sáng',
+          value: item.light,
+          unit: 'Lux',
+          color: '#D97706',
+          tagColor: 'gold',
+          measured_at: item.measured_at,
+          formattedTime,
+        };
 
-      const humidValStr = item.humidity !== undefined && item.humidity !== null ? `${item.humidity}` : '';
-      const matchHumidVal =
-        humidValStr.includes(query) ||
-        `${humidValStr} %`.includes(query) ||
-        `${humidValStr}%`.includes(query);
+        const humidRow = {
+          key: `${item.id || itemIdx}_HUMID`,
+          rawId: item.id,
+          sensorType: 'HUMID',
+          sensorName: 'Độ ẩm',
+          value: item.humidity,
+          unit: '%',
+          color: '#0284C7',
+          tagColor: 'blue',
+          measured_at: item.measured_at,
+          formattedTime,
+        };
 
-      const lightValStr = item.light !== undefined && item.light !== null ? `${item.light}` : '';
-      const matchLightVal =
-        lightValStr.includes(query) ||
-        `${lightValStr} lux`.toLowerCase().includes(query) ||
-        `${lightValStr}lux`.toLowerCase().includes(query);
+        const tempRow = {
+          key: `${item.id || itemIdx}_TEMP`,
+          rawId: item.id,
+          sensorType: 'TEMP',
+          sensorName: 'Nhiệt độ',
+          value: item.temperature,
+          unit: '°C',
+          color: '#E05318',
+          tagColor: 'orange',
+          measured_at: item.measured_at,
+          formattedTime,
+        };
 
-      if (filterType === 'ALL') {
-        if (matchLightVal || matchTime || 'ánh sáng'.includes(query)) rows.push(lightRow);
-        if (matchHumidVal || matchTime || 'độ ẩm'.includes(query)) rows.push(humidRow);
-        if (matchTempVal || matchTime || 'nhiệt độ'.includes(query)) rows.push(tempRow);
-      } else if (filterType === 'TIME') {
-        if (matchTime) {
-          rows.push(lightRow, humidRow, tempRow);
+        if (!query) {
+          if (filterType === 'ALL' || filterType === 'LIGHT') rows.push(lightRow);
+          if (filterType === 'ALL' || filterType === 'HUMID') rows.push(humidRow);
+          if (filterType === 'ALL' || filterType === 'TEMP') rows.push(tempRow);
+        } else {
+          const tempValStr = item.temperature !== undefined && item.temperature !== null ? `${item.temperature}` : '';
+          const matchTempVal =
+            tempValStr.includes(query) ||
+            `${tempValStr} °c`.toLowerCase().includes(query) ||
+            `${tempValStr}°c`.toLowerCase().includes(query);
+
+          const humidValStr = item.humidity !== undefined && item.humidity !== null ? `${item.humidity}` : '';
+          const matchHumidVal =
+            humidValStr.includes(query) ||
+            `${humidValStr} %`.includes(query) ||
+            `${humidValStr}%`.includes(query);
+
+          const lightValStr = item.light !== undefined && item.light !== null ? `${item.light}` : '';
+          const matchLightVal =
+            lightValStr.includes(query) ||
+            `${lightValStr} lux`.toLowerCase().includes(query) ||
+            `${lightValStr}lux`.toLowerCase().includes(query);
+
+          if (filterType === 'ALL') {
+            if (matchLightVal || matchTime || 'ánh sáng'.includes(query)) rows.push(lightRow);
+            if (matchHumidVal || matchTime || 'độ ẩm'.includes(query)) rows.push(humidRow);
+            if (matchTempVal || matchTime || 'nhiệt độ'.includes(query)) rows.push(tempRow);
+          } else if (filterType === 'TIME' && matchTime) {
+            rows.push(lightRow, humidRow, tempRow);
+          } else if (filterType === 'TEMP' && matchTempVal) {
+            rows.push(tempRow);
+          } else if (filterType === 'HUMID' && matchHumidVal) {
+            rows.push(humidRow);
+          } else if (filterType === 'LIGHT' && matchLightVal) {
+            rows.push(lightRow);
+          }
         }
-      } else if (filterType === 'TEMP') {
-        if (matchTempVal) {
-          rows.push(tempRow);
-        }
-      } else if (filterType === 'HUMID') {
-        if (matchHumidVal) {
-          rows.push(humidRow);
-        }
-      } else if (filterType === 'LIGHT') {
-        if (matchLightVal) {
-          rows.push(lightRow);
+      }
+
+      // 2. Nếu bản ghi chứa dữ liệu 3 Cảm biến ngẫu nhiên (Cảm biến 1, 2, 3)
+      if (item._type === 'RANDOM' || item.s1 !== undefined) {
+        const s1Row = {
+          key: `${item.id || itemIdx}_S1`,
+          rawId: item.id,
+          sensorType: 'S1',
+          sensorName: 'Cảm biến 1',
+          value: item.s1,
+          unit: 'idx',
+          color: '#722ED1',
+          tagColor: 'purple',
+          measured_at: item.measured_at,
+          formattedTime,
+          isAlert: item.alert_s1,
+        };
+
+        const s2Row = {
+          key: `${item.id || itemIdx}_S2`,
+          rawId: item.id,
+          sensorType: 'S2',
+          sensorName: 'Cảm biến 2',
+          value: item.s2,
+          unit: 'ppm',
+          color: '#13C2C2',
+          tagColor: 'cyan',
+          measured_at: item.measured_at,
+          formattedTime,
+          isAlert: item.alert_s2,
+        };
+
+        const s3Row = {
+          key: `${item.id || itemIdx}_S3`,
+          rawId: item.id,
+          sensorType: 'S3',
+          sensorName: 'Cảm biến 3',
+          value: item.s3,
+          unit: 'ppb',
+          color: '#EB2F96',
+          tagColor: 'magenta',
+          measured_at: item.measured_at,
+          formattedTime,
+          isAlert: item.alert_s3,
+        };
+
+        if (!query) {
+          if (filterType === 'ALL' || filterType === 'S1') rows.push(s1Row);
+          if (filterType === 'ALL' || filterType === 'S2') rows.push(s2Row);
+          if (filterType === 'ALL' || filterType === 'S3') rows.push(s3Row);
+        } else {
+          const s1ValStr = item.s1 !== undefined && item.s1 !== null ? `${item.s1}` : '';
+          const matchS1 = s1ValStr === query || s1ValStr.includes(query) || 'cảm biến 1'.includes(query);
+
+          const s2ValStr = item.s2 !== undefined && item.s2 !== null ? `${item.s2}` : '';
+          const matchS2 = s2ValStr === query || s2ValStr.includes(query) || 'cảm biến 2'.includes(query);
+
+          const s3ValStr = item.s3 !== undefined && item.s3 !== null ? `${item.s3}` : '';
+          const matchS3 = s3ValStr === query || s3ValStr.includes(query) || 'cảm biến 3'.includes(query);
+
+          if (filterType === 'ALL') {
+            if (matchS1 || matchTime) rows.push(s1Row);
+            if (matchS2 || matchTime) rows.push(s2Row);
+            if (matchS3 || matchTime) rows.push(s3Row);
+          } else if (filterType === 'TIME' && matchTime) {
+            rows.push(s1Row, s2Row, s3Row);
+          } else if (filterType === 'S1' && matchS1) {
+            rows.push(s1Row);
+          } else if (filterType === 'S2' && matchS2) {
+            rows.push(s2Row);
+          } else if (filterType === 'S3' && matchS3) {
+            rows.push(s3Row);
+          }
         }
       }
     });
@@ -213,17 +292,20 @@ export default function DataSensorPage() {
       key: 'sensorName',
       width: '24%',
       render: (name, record) => (
-        <Tag
-          color={record.tagColor}
-          style={{
-            fontSize: 13,
-            fontWeight: 500,
-            padding: '2px 10px',
-            borderRadius: 6,
-          }}
-        >
-          {name}
-        </Tag>
+        <Space size={6}>
+          <Tag
+            color={record.tagColor}
+            style={{
+              fontSize: 13,
+              fontWeight: 500,
+              padding: '2px 10px',
+              borderRadius: 6,
+            }}
+          >
+            {name}
+          </Tag>
+          {record.isAlert && <Tag color="error">Cảnh báo</Tag>}
+        </Space>
       ),
     },
     {
@@ -234,7 +316,7 @@ export default function DataSensorPage() {
       sorter: (a, b) => a.value - b.value,
       render: (val, record) => {
         return (
-          <span style={{ fontWeight: 700, color: '#2F54EB', fontSize: 14 }}>
+          <span style={{ fontWeight: 700, color: record.isAlert ? '#CF1322' : '#2F54EB', fontSize: 14 }}>
             {val} {record.unit}
           </span>
         );
@@ -294,7 +376,7 @@ export default function DataSensorPage() {
         }}
         bodyStyle={{ padding: '18px 20px' }}
       >
-        {/* CỤM BỘ CHỌN LỌC CẠNH Ô TÌM GIÁ TRỊ VÀ NÚT LÀM MỚI (THEO ĐÚNG MẪU) */}
+        {/* CỤM BỘ CHỌN LỌC CẠNH Ô TÌM GIÁ TRỊ VÀ NÚT LÀM MỚI */}
         <div
           style={{
             display: 'flex',
@@ -306,36 +388,45 @@ export default function DataSensorPage() {
           }}
         >
           {/* Nhóm Select và Input liền nhau (Space.Compact) */}
-          <Space.Compact style={{ width: 520, maxWidth: '100%' }}>
+          <Space.Compact style={{ width: 560, maxWidth: '100%' }}>
             <Select
               value={filterType}
               onChange={(val) => {
                 setFilterType(val);
                 setPagination((prev) => ({ ...prev, current: 1 }));
               }}
-              style={{ width: 165 }}
+              style={{ width: 190 }}
               popupMatchSelectWidth={false}
-              dropdownStyle={{ minWidth: 165 }}
+              dropdownStyle={{ minWidth: 190 }}
               size="middle"
             >
-              <Option value="ALL">Tất cả</Option>
+              <Option value="ALL">Tất cả cảm biến</Option>
               <Option value="TIME">Thời gian</Option>
-              <Option value="TEMP">Nhiệt độ</Option>
-              <Option value="HUMID">Độ ẩm</Option>
-              <Option value="LIGHT">Ánh sáng</Option>
+              <Option value="TEMP">Nhiệt độ (°C)</Option>
+              <Option value="HUMID">Độ ẩm (%)</Option>
+              <Option value="LIGHT">Ánh sáng (Lux)</Option>
+              <Option value="S1">Cảm biến 1 (0–11)</Option>
+              <Option value="S2">Cảm biến 2 (0–101)</Option>
+              <Option value="S3">Cảm biến 3 (0–1001)</Option>
             </Select>
 
             <Input
               placeholder={
                 filterType === 'TEMP'
-                  ? 'Nhập giá trị nhiệt độ (VD: 30)...'
+                  ? 'Nhập nhiệt độ (VD: 30)...'
                   : filterType === 'HUMID'
-                  ? 'Nhập giá trị độ ẩm (VD: 70)...'
+                  ? 'Nhập độ ẩm (VD: 70)...'
                   : filterType === 'LIGHT'
-                  ? 'Nhập giá trị ánh sáng (VD: 300)...'
+                  ? 'Nhập ánh sáng (VD: 300)...'
+                  : filterType === 'S1'
+                  ? 'Nhập giá trị Cảm biến 1 (0-11)...'
+                  : filterType === 'S2'
+                  ? 'Nhập giá trị Cảm biến 2 (0-101)...'
+                  : filterType === 'S3'
+                  ? 'Nhập giá trị Cảm biến 3 (0-1001)...'
                   : filterType === 'TIME'
-                  ? 'Nhập thời gian (VD: 29/10/2026 08:12:24)...'
-                  : 'Nhập giá trị tìm kiếm (VD: 29/10/2026 08:12:24)...'
+                  ? 'Nhập thời gian (VD: 29/10/2026)...'
+                  : 'Nhập giá trị tìm kiếm...'
               }
               value={searchValue}
               onChange={(e) => {
@@ -352,7 +443,7 @@ export default function DataSensorPage() {
             />
           </Space.Compact>
 
-          {/* Nút Làm mới với icon reload xanh nhạt theo mẫu */}
+          {/* Nút Làm mới */}
           <Button
             icon={<ReloadOutlined style={{ color: '#1677FF' }} />}
             onClick={handleReset}
@@ -379,7 +470,7 @@ export default function DataSensorPage() {
           </div>
         </div>
 
-        {/* BẢNG DỮ LIỆU THEO YÊU CẦU: ID, Tên cảm biến, Giá trị, Thời gian */}
+        {/* BẢNG DỮ LIỆU CẢM BIẾN */}
         <Table
           columns={columns}
           dataSource={tableData}
