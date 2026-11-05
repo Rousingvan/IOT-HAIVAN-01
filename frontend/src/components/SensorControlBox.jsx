@@ -6,7 +6,7 @@ const { Text } = Typography;
 /**
  * Component Box Chỉnh Tay Giá Trị Cảm Biến (Hàng dưới - 3 Box)
  * - Có trạng thái Disable khi đang ở chế độ Tự Động (Auto)
- * - Cho phép nhập số cụ thể và có nút test nhanh vượt ngưỡng/an toàn
+ * - Cho phép nhập số cụ thể và bấm "Đặt số"
  */
 export default function SensorControlBox({
   sensorKey,
@@ -14,8 +14,6 @@ export default function SensorControlBox({
   max,
   value = 0,
   isManualMode = false,
-  quickOverVal,
-  quickSafeVal,
   onSetManual,
   loading = false,
 }) {
@@ -47,7 +45,7 @@ export default function SensorControlBox({
       </div>
 
       {/* 2. Ô nhập số + Nút áp dụng */}
-      <Space.Compact style={{ width: '100%', marginBottom: 12 }}>
+      <Space.Compact style={{ width: '100%' }}>
         <InputNumber
           min={0}
           max={max}
@@ -55,12 +53,12 @@ export default function SensorControlBox({
           onChange={(val) => setInputValue(val)}
           placeholder={`Nhập 0 - ${max}`}
           disabled={!isManualMode}
-          style={{ width: '65%' }}
+          style={{ width: '68%' }}
           size="middle"
         />
         <Button
           type="primary"
-          style={{ width: '35%' }}
+          style={{ width: '32%' }}
           size="middle"
           loading={loading}
           disabled={!isManualMode}
@@ -69,27 +67,6 @@ export default function SensorControlBox({
           Đặt số
         </Button>
       </Space.Compact>
-
-      {/* 3. Hai nút bấm nhanh */}
-      <div style={{ display: 'flex', gap: 8 }}>
-        <Button
-          danger
-          disabled={!isManualMode}
-          style={{ flex: 1, fontSize: 12 }}
-          size="middle"
-          onClick={() => onSetManual(sensorKey, quickOverVal)}
-        >
-          Test vượt ({quickOverVal})
-        </Button>
-        <Button
-          disabled={!isManualMode}
-          style={{ flex: 1, fontSize: 12 }}
-          size="middle"
-          onClick={() => onSetManual(sensorKey, quickSafeVal)}
-        >
-          Test an toàn ({quickSafeVal})
-        </Button>
-      </div>
     </Card>
   );
 }

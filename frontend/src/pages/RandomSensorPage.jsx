@@ -227,8 +227,6 @@ export default function RandomSensorPage() {
               max={11}
               value={latest.s1}
               isManualMode={isManual}
-              quickOverVal={8}
-              quickSafeVal={3}
               onSetManual={handleSetManual}
               loading={actionLoading}
             />
@@ -241,8 +239,6 @@ export default function RandomSensorPage() {
               max={101}
               value={latest.s2}
               isManualMode={isManual}
-              quickOverVal={75}
-              quickSafeVal={25}
               onSetManual={handleSetManual}
               loading={actionLoading}
             />
@@ -255,8 +251,6 @@ export default function RandomSensorPage() {
               max={1001}
               value={latest.s3}
               isManualMode={isManual}
-              quickOverVal={800}
-              quickSafeVal={200}
               onSetManual={handleSetManual}
               loading={actionLoading}
             />
