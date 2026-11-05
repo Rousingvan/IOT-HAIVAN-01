@@ -34,9 +34,9 @@
 #define PIN_LED_STATUS 2 // LED onboard báo trạng thái kết nối
 
 // Chân 3 LED cảnh báo cho 3 cảm biến ngẫu nhiên (Đề 3)
-#define PIN_ALERT_S1 25  // LED cảnh báo Cảm biến 1 (0-11)
-#define PIN_ALERT_S2 26  // LED cảnh báo Cảm biến 2 (0-101)
-#define PIN_ALERT_S3 27  // LED cảnh báo Cảm biến 3 (0-1001)
+#define PIN_ALERT_S1 25  // LED cảnh báo Cảm biến 1 (0-11) - Chân D25
+#define PIN_ALERT_S2 33  // LED cảnh báo Cảm biến 2 (0-101) - Chân D33
+#define PIN_ALERT_S3 32  // LED cảnh báo Cảm biến 3 (0-1001) - Chân D32
 
 // Cấu hình dải đo & tốc độ nháy
 #define S1_MAX 11
