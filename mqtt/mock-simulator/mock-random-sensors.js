@@ -86,3 +86,4 @@ client.on('message', (topic, message) => {
 client.on('error', (err) => {
   console.error('❌ Lỗi kết nối MQTT Mock Random Sensors:', err.message);
 });
+

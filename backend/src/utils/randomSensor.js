@@ -64,3 +64,4 @@ export const buildRandomSensorPoint = (payload = {}, fallbackTime = new Date()) 
     measured_at: measuredAt,
   };
 };
+

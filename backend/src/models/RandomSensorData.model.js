@@ -55,3 +55,4 @@ const randomSensorDataSchema = new mongoose.Schema(
 randomSensorDataSchema.index({ measured_at: -1 });
 
 export const RandomSensorData = mongoose.model('RandomSensorData', randomSensorDataSchema);
+

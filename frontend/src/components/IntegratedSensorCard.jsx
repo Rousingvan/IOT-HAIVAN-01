@@ -55,7 +55,7 @@ export default function IntegratedSensorCard({
         </Space>
         {isAlert ? (
           <Tag color="error" style={{ fontWeight: 600, fontSize: 12, padding: '2px 8px' }}>
-            CẢNH BÁO ({percent}%)
+            CẢNH BÁO
           </Tag>
         ) : (
           <Tag color="success" style={{ fontSize: 12, padding: '2px 8px' }}>
@@ -90,7 +90,7 @@ export default function IntegratedSensorCard({
             Tối thiểu: 0
           </Text>
           <Text type="secondary" style={{ fontSize: 11, color: isAlert ? '#cf1322' : '#6b7280' }}>
-            Ngưỡng 50%: &gt; {threshold}
+            Ngưỡng cảnh báo: &gt; {threshold}
           </Text>
           <Text type="secondary" style={{ fontSize: 11 }}>
             Tối đa: {max}
@@ -165,3 +165,4 @@ export default function IntegratedSensorCard({
     </Card>
   );
 }
+

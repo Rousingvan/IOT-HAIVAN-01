@@ -60,21 +60,38 @@ body {
   opacity: 0.75;
 }
 
-/* Hiệu ứng nháy cảnh báo thẻ cảm biến khi vượt ngưỡng > 50% (Đề 3: 500ms) */
+/* Hiệu ứng nháy cảnh báo thẻ cảm biến và thẻ đèn LED (Đề 3: 500ms ON / 500ms OFF) */
 @keyframes alert-card-pulse {
   0%, 100% {
     border-color: #ff4d4f;
     background-color: #fff1f0;
-    box-shadow: 0 0 12px rgba(255, 77, 79, 0.45);
+    box-shadow: 0 0 14px rgba(255, 77, 79, 0.45);
   }
   50% {
-    border-color: #d9d9d9;
+    border-color: #ffccc7;
     background-color: #ffffff;
     box-shadow: none;
+  }
+}
+
+@keyframes alert-bulb-pulse {
+  0%, 100% {
+    transform: scale(1.12);
+    filter: drop-shadow(0 0 12px rgba(255, 77, 79, 0.9));
+    color: #ff4d4f;
+  }
+  50% {
+    transform: scale(0.95);
+    filter: none;
+    color: #ffa39e;
   }
 }
 
 .alert-card-blink {
   animation: alert-card-pulse 1s infinite ease-in-out;
   border-width: 2px !important;
+}
+
+.alert-bulb-blink {
+  animation: alert-bulb-pulse 1s infinite ease-in-out;
 }
